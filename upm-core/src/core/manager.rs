@@ -1,10 +1,16 @@
+// This suppresses all the unused crate warnings.
+#![allow(unused)]
 use sqlx::sqlite::{SqlitePool, SqliteConnectOptions, SqlitePoolOptions};
 use std::str::FromStr;
 use std::path::PathBuf;
 use anyhow::Result;
 use std::sync::Arc;
-use crate::core::thread_coordinator::ThreadCoordinator;
-use crate::types::{Package, PackageInfo, Result, Error, Operation};
+// The name of the module is threadcoordination.
+// Not thread_coordinator.
+use crate::core::threadcoordination::ThreadCoordinator;
+// It's types --> package --> Package and PackageInfo.
+// Not types --> Package and PackageInfo.
+use crate::types::package::{Package, PackageInfo};
 
 pub struct PackageManager {
     coordinator: Arc<ThreadCoordinator>,
@@ -29,13 +35,14 @@ impl PackageManager {
 
     pub async fn get_package_info(&self, package_id: &str) -> Result<PackageInfo> {
         // log::info!("Getting info for package: {}", package_id);
-
+        // There was no "backends" field in the struct.
+        // And the category field was missing.
         Ok(PackageInfo {
             id: package_id.to_string(),
             name: "Firefox".to_string(),
+            category: Vec::new(),
             version: "121.0".to_string(),
             description: Some("Web Browser".to_string()),
-            backends: vec!["deb".to_string()],
             size_bytes: 45_000_000,
             license: Some("MPL-2.0".to_string()),
             homepage: Some("https://firefox.com".to_string()),

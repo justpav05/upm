@@ -3,7 +3,7 @@
 
 pub mod core {
     pub mod manager;
-    pub mod thread_coordinator;
+    pub mod threadcoordination;
 }
 
 pub mod types {
@@ -12,12 +12,12 @@ pub mod types {
 }
 
 pub use core::manager::PackageManager;
-pub use core::thread_coordinator::ThreadCoordinator;
-pub use types::{Package, PackageInfo, Result};
+pub use core::threadcoordination::ThreadCoordinator;
+pub use crate::types::package::{Package, PackageInfo};
 
 pub mod prelude {
     pub use crate::{
-        types::{Operation, Package, PackageInfo, Result},
+        types::package::{Package, PackageInfo},
         PackageManager, ThreadCoordinator,
     };
 }

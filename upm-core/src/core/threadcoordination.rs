@@ -1,3 +1,5 @@
+// This suppresses all the unused crate warnings.
+#![allow(unused)]
 use std::sync::Arc;
 use parking_lot::RwLock;
 use std::collections::HashMap;
@@ -29,26 +31,26 @@ impl ThreadCoordinator {
         Ok(Self { config })
     }
 
-    pub async fn search_packages(&self, query: &str) -> anyhow::Result<Vec<crate::types::Package>> {
+    pub async fn search_packages(&self, query: &str) -> anyhow::Result<Vec<crate::types::package::Package>> {
         log::debug!("Coordinator searching for: {}", query);
         Ok(vec![])
     }
 
-    pub async fn get_package_info(&self, package_id: &str) -> anyhow::Result<crate::types::PackageInfo> {
+    pub async fn get_package_info(&self, package_id: &str) -> anyhow::Result<crate::types::package::PackageInfo> {
         log::debug!("Coordinator getting info for: {}", package_id);
-        Ok(crate::types::PackageInfo {
+        Ok(crate::types::package::PackageInfo {
             id: package_id.to_string(),
             name: "Test".to_string(),
             version: "1.0".to_string(),
             description: None,
-            backends: vec![],
+            category: Vec::new(),
             size_bytes: 0,
             license: None,
             homepage: None,
         })
     }
 
-    pub async fn list_installed(&self) -> anyhow::Result<Vec<crate::types::Package>> {
+    pub async fn list_installed(&self) -> anyhow::Result<Vec<crate::types::package::Package>> {
         log::debug!("Coordinator listing installed");
         Ok(vec![])
     }
