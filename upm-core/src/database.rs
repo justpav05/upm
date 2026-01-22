@@ -7,7 +7,7 @@ use libc;
 use crate::errors::DbError;
 
 pub struct Database {
-    pool: SqlitePool,
+    pool: SqlitePool,s
     database_path: PathBuf,
 }
 
