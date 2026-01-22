@@ -4,34 +4,25 @@ use std::path::PathBuf;
 use std::{fs, io};
 use libc;
 
+use crate::errors::DbError;
+
 pub struct Database {
     pool: SqlitePool,
-    db_path: PathBuf,
-}
-
-#[derive(Debug)]
-enum DbError {
-    PathNotAccessible(String),
-    DatabaseExists(String),
-    CannotCreateDirectory(io::Error),
-    InvalidPermissions(String),
-    PathIsFile(String),
-    DatabaseCorrupted(String),
-    IoError(io::Error),
+    database_path: PathBuf,
 }
 
 impl Database {
-    pub async fn new(database_dir_path: &Path, database_name: String, max_connection_for_pool: u8) -> Result<Self> {
+    pub async fn new(database_dir_path: &Path, database_name: String, max_connection_for_pool: u32) -> Result<Self, DbError> {
         //log::info!("Initializing database at: {:?}", db_path);
-        if unsafe { libc::geteuid() } != 0 { return Err(DbError::InvalidPermissions(
-            format!("Недостаточно прав. Текущий UID: {}. Требуется root (UID 0)", unsafe { libc::geteuid() })
-            ));
+        let uid = unsafe { libc::geteuid() };
+        if uid != 0 {
+            return Err(DbError::InvalidPermissions(uid));
         }
 
-        let database_path = database_dir_path.join(database_name)
-        if database_path.exists() { return Err(DbError::DatabaseExists(
-            format!("Database {} aalready exists\n", database_name)
-        )); }
+        let database_path = database_dir_path.join(&database_name);
+        if database_path.exists() {
+            return Err(DbError::DatabaseExists(database_name));
+        }
 
         let connect_options = SqliteConnectOptions::from_str(
             &format!("sqlite://{}", database_path.display())
@@ -49,30 +40,27 @@ impl Database {
     }
 
     pub fn check_database_valid(database_path: &Path) -> Result<(), DbError> {
-        if !database_path.exists() { return Err(DbError::PathNotAccessible(
-            format!("Path doesn`t exists: \n", database_path)
-        )); }
-
-        if database_path.extension().and_then(|string| string.to_str()) != Some("db") {
-            return Err(DbError::PathNotAccessible(
-                format!("Path incorrect!\n")
-            ))
+        if !database_path.exists() {
+            return Err(DbError::PathNotAccessible(database_path.display().to_string()));
         }
 
-        let metadata = fs::metadata(database_path).map_err(|e| DbError::IoError(e))?;
-        let mod = metadata.permissions().mode();
+        if database_path.extension().and_then(|s| s.to_str()) != Some("db") {
+            return Err(DbError::InvalidDatabaseExtension(database_path.display().to_string()));
+        }
 
-        if (mode & 0o600) != 0o600 { return Err(DbError::InvalidPermissions(
-            format!("Database acsses error!")
-        )); }
+        let metadata = fs::metadata(database_path).map_err(DbError::IoError)?;
+        let mode = metadata.permissions().mode();
 
-        return Ok(());
+        if (mode & 0o600) != 0o600 {
+            return Err(DbError::IncorrectFilePermissions(database_path.display().to_string()));
+        }
+
+        Ok(())
     }
 
     pub async fn init_schema(&self) -> Result<()> {
         //log::info!("Initializing database schema");
 
-        // Создать таблицу пакетов
         sqlx::query(
             r#"
             CREATE TABLE IF NOT EXISTS packages (
@@ -180,18 +168,5 @@ impl Database {
         self.pool.close().await;
         log::info!("Database closed");
         Ok(())
-    }
-}
-
-impl std::fmt::Display for DbError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self {
-            DbError::PathNotAccessible(msg) => write!(f, "Путь недоступен: {}", msg),
-            DbError::CannotCreateDirectory(e) => write!(f, "Не удалось создать директорию: {}", e),
-            DbError::InvalidPermissions(msg) => write!(f, "Недостаточно прав: {}", msg),
-            DbError::PathIsFile(msg) => write!(f, "Путь указывает на файл, а не директорию: {}", msg),
-            DbError::DatabaseCorrupted(msg) => write!(f, "База данных повреждена: {}", msg),
-            DbError::IoError(e) => write!(f, "Ошибка ввода-вывода: {}", e),
-        }
     }
 }
