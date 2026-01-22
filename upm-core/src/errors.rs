@@ -49,4 +49,7 @@ enum DbError {
 
     #[error("Неверные права доступа для файла базы данных '{0}'. Требуются права 600.")]
     IncorrectFilePermissions(String),
+
+    #[error("Некорректный SQL-файл: {0}")]
+    InvalidSqlFile(String),
 }
