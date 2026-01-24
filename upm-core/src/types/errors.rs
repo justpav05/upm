@@ -1,7 +1,7 @@
-use sqlx::{self, error::DatabaseError};
+use sqlx::{self};
 use thiserror::Error;
 
-//pub type Result<T> = std::result::Result<T, DataBaseError>;
+pub type Result<T> = std::result::Result<T, DataBaseError>;
 
 #[derive(Debug, Error)]
 pub enum PackageError {
@@ -38,8 +38,8 @@ pub enum DataBaseError {
     #[error("База данных повреждена: {0}")]
     DatabaseCorrupted(String),
 
-    #[error("Ощибка вхождения: {0}")]
-    IoError(std::io::Error),
+    #[error("Ошибка вхождения: {0}")]
+    IoError(#[from] std::io::Error),
 
     #[error("Неверное расширение файла базы данных для '{0}', должно быть '.db'")]
     InvalidDatabaseExtension(String),
@@ -50,7 +50,7 @@ pub enum DataBaseError {
     #[error("Некорректный SQL-файл: {0}")]
     InvalidSqlFile(String),
 
-    #[error("Валидация базы данных не прошла успншно: {0}")]
+    #[error("Валидация базы данных не прошла успешно: {0}")]
     DatabaseValidationError(String),
 
     #[error("Такой пакет уже существует: {0}")]
@@ -61,6 +61,12 @@ pub enum DataBaseError {
 
     #[error("База данных не отвечает")]
     DatabaseTimeout,
+
+    #[error("Ошибка подключения к базе данных: {0}")]
+    ConnectionError(String),
+
+    #[error("Пакет не найден: {0}")]
+    PackageNotFound(String),
 
     #[error("Неизвестная ошибка базы данных")]
     UnknownDatabaseError,
@@ -75,6 +81,10 @@ impl From<sqlx::Error> for DataBaseError {
                 let sqlite_err = db_err.downcast_ref::<sqlx::sqlite::SqliteError>();
                 sqlite_err.into()
             }
+            sqlx::Error::Configuration(config_err) => {
+                DataBaseError::ConnectionError(config_err.to_string())
+            }
+            sqlx::Error::Tls(tls_err) => DataBaseError::ConnectionError(tls_err.to_string()),
             _ => DataBaseError::UnknownDatabaseError,
         }
     }
