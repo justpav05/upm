@@ -1,12 +1,16 @@
 //! Universal Package Manager Core Library
 
-pub mod core;
+pub mod database;
+pub mod package_manager;
+pub mod threadcoordination;
 pub mod types;
 
 pub use crate::types::package::Package;
-pub use core::manager::PackageManager;
-pub use core::threadcoordination::ThreadCoordinator;
+pub use threadcoordination::ThreadCoordinator;
 
 pub mod prelude {
-    pub use crate::{PackageManager, ThreadCoordinator, types::package::Package};
+    pub use crate::{
+        ThreadCoordinator, database::DataBase, package_manager::PackageManager,
+        types::package::Package,
+    };
 }
