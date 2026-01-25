@@ -36,7 +36,7 @@ impl DataBase {
     /// - Пакет с таким именем уже существует (`UniqueConstraintViolated`)
     /// - Произошла ошибка при выполнении SQL-запроса
     pub async fn add_package(&self, package: &Package) -> Result<(), DataBaseError> {
-        const ADD_PACKAGE_SQL: &str = include_str!("../../sql/queries/add_package.sql");
+        const ADD_PACKAGE_SQL: &str = include_str!("../sql/queries/add_package.sql");
 
         package
             .bind_to_insert_query(sqlx::query(ADD_PACKAGE_SQL))
@@ -66,7 +66,7 @@ impl DataBase {
         &self,
         package_name: &str,
     ) -> Result<Option<Package>, DataBaseError> {
-        const GET_PACKAGE_SQL: &str = include_str!("../../sql/queries/get_package_by_name.sql");
+        const GET_PACKAGE_SQL: &str = include_str!("../sql/queries/get_package_by_name.sql");
 
         let package = sqlx::query_as::<_, Package>(GET_PACKAGE_SQL)
             .bind(package_name)
@@ -95,7 +95,7 @@ impl DataBase {
         &self,
         package_name: &str,
     ) -> Result<bool, DataBaseError> {
-        const CHECK_EXISTS_SQL: &str = include_str!("../../sql/queries/check_package_exists.sql");
+        const CHECK_EXISTS_SQL: &str = include_str!("../sql/queries/check_package_exists.sql");
 
         let package_exists = sqlx::query_scalar(CHECK_EXISTS_SQL)
             .bind(package_name)
@@ -122,7 +122,7 @@ impl DataBase {
         &self,
         package_name: &str,
     ) -> Result<bool, DataBaseError> {
-        const GET_STATUS_SQL: &str = include_str!("../../sql/queries/get_package_status.sql");
+        const GET_STATUS_SQL: &str = include_str!("../sql/queries/get_package_status.sql");
 
         let installation_status = sqlx::query_scalar(GET_STATUS_SQL)
             .bind(package_name)
@@ -148,7 +148,7 @@ impl DataBase {
         &self,
         package_name: &str,
     ) -> Result<(), DataBaseError> {
-        const DELETE_PACKAGE_SQL: &str = include_str!("../../sql/queries/delete_package.sql");
+        const DELETE_PACKAGE_SQL: &str = include_str!("../sql/queries/delete_package.sql");
 
         sqlx::query(DELETE_PACKAGE_SQL)
             .bind(package_name)
@@ -182,7 +182,7 @@ impl DataBase {
         package_name: &str,
         new_status: bool,
     ) -> Result<(), DataBaseError> {
-        const UPDATE_STATUS_SQL: &str = include_str!("../../sql/queries/update_package_status.sql");
+        const UPDATE_STATUS_SQL: &str = include_str!("../sql/queries/update_package_status.sql");
 
         let result = sqlx::query(UPDATE_STATUS_SQL)
             .bind(new_status)
@@ -230,7 +230,7 @@ impl DataBase {
     /// 1. Все поля кроме id (для SET clause)
     /// 2. Поле id (для WHERE clause)
     pub async fn update_package_in_database(&self, package: &Package) -> Result<(), DataBaseError> {
-        const UPDATE_PACKAGE_SQL: &str = include_str!("../../sql/queries/update_package.sql");
+        const UPDATE_PACKAGE_SQL: &str = include_str!("../sql/queries/update_package.sql");
 
         let result = package
             .bind_to_update_query(sqlx::query(UPDATE_PACKAGE_SQL))

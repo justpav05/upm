@@ -96,7 +96,7 @@ impl DataBase {
     /// }
     /// ```
     pub async fn check_pool_is_healthy(&self) -> bool {
-        const HEALTH_CHECK_SQL: &str = include_str!("../../sql/queries/health_check.sql");
+        const HEALTH_CHECK_SQL: &str = include_str!("../sql/queries/health_check.sql");
 
         sqlx::query(HEALTH_CHECK_SQL)
             .fetch_one(self.pool())

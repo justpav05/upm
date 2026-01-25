@@ -131,7 +131,7 @@ impl DataBase {
         };
 
         // Автоматически инициализируем схему таблицы работы с паакетами из SQL-файла
-        const SCHEMA_SQL: &str = include_str!("../../sql/schema.sql");
+        const SCHEMA_SQL: &str = include_str!("../sql/schema.sql");
         sqlx::query(SCHEMA_SQL).execute(&database.pool).await?;
 
         // Возвращаем готовую базу данных со схемой
