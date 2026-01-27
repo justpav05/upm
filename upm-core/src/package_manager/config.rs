@@ -7,7 +7,7 @@
 // ============================================================================
 
 use super::PackageManager;
-use crate::types::errors::PackageError;
+use crate::types::PackageError;
 
 /// Конфигурация PackageManager.
 #[derive(Debug, Clone)]

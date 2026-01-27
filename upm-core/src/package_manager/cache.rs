@@ -7,7 +7,7 @@
 // ============================================================================
 
 use super::PackageManager;
-use crate::types::errors::PackageError;
+use crate::types::PackageError;
 
 impl PackageManager {
     /// Обновляет кэш репозиториев всех бэкендов.

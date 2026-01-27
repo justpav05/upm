@@ -20,7 +20,7 @@ use std::str::FromStr;
 
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePool, SqlitePoolOptions};
 
-use crate::types::errors::DataBaseError;
+use crate::types::{DataBase, DataBaseError, PoolInfo};
 
 // ============================================================================
 // Public API Re-exports
@@ -30,36 +30,6 @@ use crate::types::errors::DataBaseError;
 pub use self::connection::*;
 pub use self::packages::*;
 pub use self::validation::*;
-
-// ============================================================================
-// Core Structures
-// ============================================================================
-
-/// Основная структура для работы с базой данных пакетов.
-///
-/// Управляет пулом соединений SQLite и предоставляет методы для:
-/// - CRUD операций с пакетами
-/// - Управления подключениями
-/// - Валидации и проверки здоровья БД
-pub struct DataBase {
-    /// Пул соединений с базой данных
-    pool: SqlitePool,
-    /// Путь к файлу базы данных
-    database_path: PathBuf,
-    /// Максимальное количество соединений в пуле
-    max_connections: u32,
-}
-
-/// Информация о состоянии пула соединений с базой данных.
-#[derive(Debug, Clone)]
-pub struct PoolInfo {
-    /// Общее количество соединений в пуле
-    pub size: u32,
-    /// Количество простаивающих (неиспользуемых) соединений
-    pub idle_connections: usize,
-    /// Закрыт ли пул соединений
-    pub is_closed: bool,
-}
 
 // ============================================================================
 // Database Initialization

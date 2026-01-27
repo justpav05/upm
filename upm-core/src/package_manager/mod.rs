@@ -19,8 +19,8 @@ mod snapshots;
 
 use std::sync::Arc;
 
-use crate::database::DataBase;
 use crate::threadcoordination::ThreadCoordinator;
+use crate::types::DataBase;
 
 // ============================================================================
 // Public API Re-exports

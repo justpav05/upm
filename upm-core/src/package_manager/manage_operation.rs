@@ -3,7 +3,7 @@
 //! Handles tracking of ongoing operations, their status, and history.
 
 use super::{OperationResult, OperationStatus, PackageManager};
-use crate::types::errors::PackageError;
+use crate::types::PackageError;
 
 impl PackageManager {
     /// Получает статус операции по ID.

@@ -3,7 +3,7 @@
 //! Handles system snapshots for rollback capabilities.
 
 use super::{PackageManager, Snapshot};
-use crate::types::errors::PackageError;
+use crate::types::PackageError;
 
 impl PackageManager {
     /// Создаёт снапшот системы.

@@ -4,10 +4,9 @@
 // Imports
 // ============================================================================
 
-use super::DataBase;
-use crate::types::errors::DataBaseError;
-use crate::types::package::{Package, PackageFieldUpdate};
+use crate::types::package::Package;
 use crate::types::traits::BindableFields;
+use crate::types::{DataBase, DataBaseError, PackageFieldUpdate};
 
 // ============================================================================
 // Package CRUD Operations

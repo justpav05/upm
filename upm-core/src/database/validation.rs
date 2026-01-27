@@ -9,8 +9,7 @@ use std::path::Path;
 
 use tokio::fs as async_fs;
 
-use super::DataBase;
-use crate::types::errors::DataBaseError;
+use crate::types::{DataBase, DataBaseError};
 
 // ============================================================================
 // Validation & Integrity Checks

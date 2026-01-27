@@ -10,9 +10,9 @@
 use std::sync::Arc;
 use uuid::Uuid;
 
-use crate::database::DataBase;
+use crate::types::DataBase;
 use crate::threadcoordination::ThreadCoordinator;
-use crate::types::errors::{DataBaseError, PackageError};
+use crate::types::{DataBaseError, PackageError};
 use crate::types::package::Package;
 
 use super::{InstallOptions, OperationResult, OperationStatus, PackageManager, RemoveOptions};

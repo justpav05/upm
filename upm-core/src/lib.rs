@@ -10,7 +10,7 @@ pub use threadcoordination::ThreadCoordinator;
 
 pub mod prelude {
     pub use crate::{
-        ThreadCoordinator, database::DataBase, package_manager::PackageManager,
+        ThreadCoordinator, package_manager::PackageManager, types::database::DataBase,
         types::package::Package,
     };
 }
