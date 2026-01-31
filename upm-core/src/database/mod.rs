@@ -18,10 +18,6 @@ mod validation;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
-use sqlx::sqlite::{SqliteConnectOptions, SqlitePool, SqlitePoolOptions};
-
-use crate::types::{DataBase, DataBaseError, PoolInfo};
-
 // ============================================================================
 // Public API Re-exports
 // ============================================================================
