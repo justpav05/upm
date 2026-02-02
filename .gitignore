@@ -1,1 +1,25 @@
-/target
+# Rust compiled files
+/target/
+**/target/
+
+Cargo.lock
+/'temp folder'
+
+# Backup files
+**/*.rs.bk
+*.swp
+*.swo
+*~
+
+# IDE files
+.vscode/
+.idea/
+*.iml
+
+# Documentation build
+/target/doc/
+
+# Temporary files
+*.tmp
+*.temp
+.*.tmp

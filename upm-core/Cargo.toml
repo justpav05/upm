@@ -22,6 +22,8 @@ sqlx = { version = "0.7", features = [
 tokio = { workspace = true, features = ["full"] }
 crossbeam = "0.8"
 parking_lot = "0.12"
+libc = "0.2"
+fs2 = "0.4"
 rayon = "1.7"
 serde = { workspace = true }
 serde_json.workspace = true

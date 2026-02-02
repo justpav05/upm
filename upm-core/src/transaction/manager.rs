@@ -1,5 +1,12 @@
-use crate::types::Package;
+// ============================================================================
+// Imports
+// ============================================================================
+use std::path::PathBuf;
 
+use crate::types::Package;
+// ============================================================================
+// Transaction manager
+// ============================================================================
 pub struct TransactionManager {
     transactions_dir: PathBuf,
     current_transaction: Option<Transaction>,
