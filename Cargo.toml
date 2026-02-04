@@ -1,7 +1,6 @@
 [workspace]
 members = [
-    "upm-core",
-    "upm-backend-apt"
+    "upm-core"
 ]
 
 [workspace.package]
@@ -20,3 +19,4 @@ log = "0.4"
 url = { version = "2.5", features = ["serde"] }
 semver = "1.0"
 version-compare = "0.2"
+time = { version = "0.3", features = ["serde"] }

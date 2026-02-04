@@ -65,6 +65,21 @@ pub enum Error {
     #[error("Invalid configuration: {0}")]
     InvalidConfig(String),
 
+    #[error("Time stamp error: {0}")]
+    TimeStampError(String),
+
+    #[error("Parse transaction error: {0}")]
+    ParseTransactionError(String),
+
+    #[error("Step not found: {0}")]
+    StepNotFound(String),
+
+    #[error("Add step error: {0}")]
+    AddStepError(String),
+
+    #[error("Update step error {0}")]
+    UpdateStepError(String),
+
     #[error("{0}")]
     Other(String),
 }

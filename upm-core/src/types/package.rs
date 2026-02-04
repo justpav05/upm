@@ -1,3 +1,17 @@
+// ============================================================================
+// Imports
+// ============================================================================
+use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
+use std::time::SystemTime;
+
+use crate::types::FileEntry;
+use crate::types::PackageMetadata;
+use crate::types::Scripts;
+// ============================================================================
+// Package
+// ============================================================================
+#[derive(Clone)]
 pub struct Package {
     pub id: String,
     pub name: String,
@@ -15,7 +29,9 @@ impl Package {
     pub fn full_name(&self) -> String;
     pub fn is_installed(&self) -> bool;
 }
-
+// ============================================================================
+// Package info
+// ============================================================================
 pub struct PackageInfo {
     pub id: String,
     pub name: String,
@@ -26,7 +42,9 @@ pub struct PackageInfo {
     pub size: u64,
     pub repository: String,
 }
-
+// ============================================================================
+// Extracted package
+// ============================================================================
 pub struct ExtractedPackage {
     pub temp_path: PathBuf,
     pub files: Vec<FileEntry>,
@@ -37,7 +55,9 @@ pub struct ExtractedPackage {
 impl Drop for ExtractedPackage {
     fn drop(&mut self);
 }
-
+// ============================================================================
+// Package category
+// ============================================================================
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum PackageCategory {
     Native,    // DEB, RPM, Arch, AUR

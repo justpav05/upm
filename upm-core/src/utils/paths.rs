@@ -6,8 +6,6 @@ use std::path::Component;
 use std::path::{Path, PathBuf};
 
 use crate::types::Error;
-use serde::Serialize;
-use serde::de::DeserializeOwned;
 // ============================================================================
 // Utils path functions
 // ============================================================================

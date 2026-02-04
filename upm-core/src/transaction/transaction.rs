@@ -1,78 +1,102 @@
 // ============================================================================
 // Imports
 // ============================================================================
-use std::path::PathBuf;
+use libc::getpid;
+use serde::{Deserialize, Serialize};
+use std::time::{Duration, SystemTime};
+use uuid::Uuid;
 
+use crate::transaction::{StepStatus, TransactionStep};
+use crate::types::Error;
 use crate::types::Package;
 // ============================================================================
 // Transaction
 // ============================================================================
 pub struct Transaction {
-    id: String,
+    id: Uuid,
     operation: String,
     package: Package,
     status: TransactionStatus,
     started_at: SystemTime,
     completed_at: Option<SystemTime>,
     steps: Vec<TransactionStep>,
-    ostree_previous_commit: Option<String>,
-    ostree_new_commit: Option<String>,
     pid: u32,
 }
 
 impl Transaction {
-    pub fn new(operation: &str, package: Package) -> Self;
-    pub fn add_step(&mut self, step: TransactionStep);
-    pub fn update_step(&mut self, name: &str, status: StepStatus) -> Result<()>;
-    pub fn mark_completed(&mut self);
-    pub fn mark_failed(&mut self);
-    pub fn duration(&self) -> Option<Duration>;
-
-    fn id(&self) -> &str {
-        &self.id
+    pub fn new(operation: &str, package: Package) -> Self {
+        Transaction {
+            id: Uuid::new_v4(),
+            operation: String::from(operation),
+            package,
+            status: TransactionStatus::InProgress,
+            started_at: SystemTime::now(),
+            completed_at: None,
+            steps: Vec::new(),
+            pid: unsafe { getpid() as u32 },
+        }
+    }
+    pub fn add_step(&mut self, step: TransactionStep) {
+        self.steps.push(step);
     }
 
-    fn operation(&self) -> &str {
-        &self.operation
+    pub fn update_step(&mut self, name: &str, status: StepStatus) -> Result<(), Error> {
+        for step in &mut self.steps {
+            if step.name() == name {
+                step.set_status(status);
+                step.set_timestamp(SystemTime::now());
+
+                return Ok(());
+            }
+        }
+
+        Err(Error::StepNotFound(String::from(name)))
     }
 
-    fn package(&self) -> &Package {
-        &self.package
+    pub fn mark_completed(&mut self) {
+        self.completed_at = Some(SystemTime::now());
+        self.status = TransactionStatus::Completed;
     }
 
-    fn status(&self) -> &TransactionStatus {
-        &self.status
+    pub fn mark_failed(&mut self) {
+        self.completed_at = Some(SystemTime::now());
+        self.status = TransactionStatus::Failed;
     }
 
-    fn started_at(&self) -> &SystemTime {
-        &self.started_at
+    pub fn duration(&self) -> Option<Duration> {
+        match SystemTime::now().duration_since(self.started_at) {
+            Ok(duration) => Some(duration),
+            Err(_) => None,
+        }
     }
 
-    fn completed_at(&self) -> &Option<SystemTime> {
-        &self.completed_at
+    pub fn id(&self) -> String {
+        String::from(self.id)
     }
 
-    fn steps(&self) -> &Vec<TransactionStep> {
+    pub fn status(&self) -> TransactionStatus {
+        self.status
+    }
+
+    pub fn steps(&self) -> &Vec<TransactionStep> {
         &self.steps
     }
 
-    fn steps(&self) -> &Vec<TransactionStep> {
-        &self.steps
+    pub fn completed_at(&self) -> Option<SystemTime> {
+        self.completed_at
     }
 
-    fn ostree_previous_commit(&self) -> &Option<String> {
-        &self.ostree_previous_commit
+    pub fn set_status(&mut self, status: TransactionStatus) {
+        self.status = status;
     }
 
-    fn ostree_new_commit(&self) -> &Option<String> {
-        &self.ostree_new_commit
-    }
-
-    fn pid(&self) -> u32 {
-        self.pid
+    pub fn set_completed_at(&mut self, completed_at: Option<SystemTime>) {
+        self.completed_at = completed_at;
     }
 }
-
+// ============================================================================
+// Transaction status
+// ============================================================================
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum TransactionStatus {
     InProgress,

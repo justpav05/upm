@@ -1,9 +1,14 @@
+// ============================================================================
+// Mods declaration
+// ============================================================================mod error;
 mod error;
 mod file_entry;
 mod metadata;
 mod package;
 mod scripts;
-
+// ============================================================================
+// Mods export
+// ============================================================================
 pub use error::{Error, Result};
 pub use file_entry::FileEntry;
 pub use metadata::PackageMetadata;
