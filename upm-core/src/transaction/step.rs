@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::time::{Duration, SystemTime};
 
-use crate::types::Error;
+use crate::types::{Error, Result};
 // ============================================================================
 // Transaction step
 // ============================================================================
@@ -43,7 +43,7 @@ impl TransactionStep {
         self.status = StepStatus::Failed;
     }
 
-    pub fn duration_since(&self) -> Result<Duration, Error> {
+    pub fn duration_since(&self) -> Result<Duration> {
         SystemTime::now()
             .duration_since(self.timestamp)
             .map_err(|error| Error::TimeStampError(format!("{}", error)))

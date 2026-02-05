@@ -1,5 +1,10 @@
+// ============================================================================
+// Mods declaration
+// ============================================================================
 mod manager;
 mod types;
-
+// ============================================================================
+// Mods export
+// ============================================================================
 pub use manager::LockManager;
-pub use types::{SharedLock, ExclusiveLock, LockType, LockInfo};
+pub use types::{ExclusiveLock, LockInfo, LockType, SharedLock};

@@ -7,11 +7,11 @@ use std::fs;
 use std::io::{Read, Write};
 use std::path::Path;
 
-use crate::types::Error;
+use crate::types::{Error, Result};
 // ============================================================================
 // Utils toml functions
 // ============================================================================
-pub fn read_toml<T: DeserializeOwned>(path: &Path) -> Result<T, Error> {
+pub fn read_toml<T: DeserializeOwned>(path: &Path) -> Result<T> {
     let mut file = fs::File::open(path).map_err(|error| Error::IoError(error))?;
     let mut contents = String::new();
 
@@ -21,7 +21,7 @@ pub fn read_toml<T: DeserializeOwned>(path: &Path) -> Result<T, Error> {
     toml::from_str(&contents).map_err(|error| Error::TomlError(error))
 }
 
-pub fn write_toml<T: Serialize>(path: &Path, value: &T) -> Result<(), Error> {
+pub fn write_toml<T: Serialize>(path: &Path, value: &T) -> Result<()> {
     let content =
         toml::to_string_pretty(value).map_err(|error| Error::InvalidConfig(error.to_string()))?;
     let mut file = fs::File::create(path).map_err(|error| Error::IoError(error))?;
@@ -32,7 +32,7 @@ pub fn write_toml<T: Serialize>(path: &Path, value: &T) -> Result<(), Error> {
     Ok(())
 }
 
-pub fn write_toml_atomic<T: Serialize>(path: &Path, value: &T) -> Result<(), Error> {
+pub fn write_toml_atomic<T: Serialize>(path: &Path, value: &T) -> Result<()> {
     let content =
         toml::to_string_pretty(value).map_err(|error| Error::InvalidConfig(error.to_string()))?;
 

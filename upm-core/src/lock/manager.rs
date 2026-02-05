@@ -6,7 +6,7 @@ use std::os::unix::io::AsRawFd;
 use std::path::PathBuf;
 use std::time::SystemTime;
 
-use libc::{F_GETLK, F_RDLCK, F_UNLCK, F_WRLCK, LOCK_EX, LOCK_NB, LOCK_UN, fcntl, flock};
+use libc::{F_GETLK, fcntl};
 
 use crate::lock::types::LockType::Shared;
 use crate::lock::types::{ExclusiveLock, LockInfo, SharedLock};
@@ -162,7 +162,7 @@ impl LockManager {
             l_pid: 0,
         };
 
-        if unsafe { fcntl(file.as_raw_fd(), F_GETLK, &mut flock) } != -1 {
+        if unsafe { fcntl(file_descriptor.as_raw_fd(), F_GETLK, &mut flock) } != -1 {
             if flock.l_type == libc::F_WRLCK {
                 let lock_info = LockInfo {
                     pid: flock.l_pid as u32,
@@ -184,7 +184,7 @@ impl LockManager {
             return Err(Error::LockError((String::from("Lock file is empty"))));
         }
 
-        let package_str = lock.package.as_deref().unwrap_or("");
+        let package_str = locks.package.as_deref().unwrap_or("");
         if package_str.is_empty() {
             return Err(Error::TransactionError(
                 (format!("No package specified: {}", package_str)),

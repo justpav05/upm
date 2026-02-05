@@ -7,8 +7,8 @@ use std::time::{Duration, SystemTime};
 use uuid::Uuid;
 
 use crate::transaction::{StepStatus, TransactionStep};
-use crate::types::Error;
 use crate::types::Package;
+use crate::types::{Error, Result};
 // ============================================================================
 // Transaction
 // ============================================================================
@@ -40,7 +40,7 @@ impl Transaction {
         self.steps.push(step);
     }
 
-    pub fn update_step(&mut self, name: &str, status: StepStatus) -> Result<(), Error> {
+    pub fn update_step(&mut self, name: &str, status: StepStatus) -> Result<()> {
         for step in &mut self.steps {
             if step.name() == name {
                 step.set_status(status);

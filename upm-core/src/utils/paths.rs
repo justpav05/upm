@@ -5,11 +5,11 @@ use std::fs;
 use std::path::Component;
 use std::path::{Path, PathBuf};
 
-use crate::types::Error;
+use crate::types::{Error, Result};
 // ============================================================================
 // Utils path functions
 // ============================================================================
-pub fn validate_path(path: &Path) -> Result<(), Error> {
+pub fn validate_path(path: &Path) -> Result<()> {
     if !path.exists() {
         Err(Error::PathError(path.to_path_buf()))
     } else if !path.is_file() {
@@ -19,7 +19,7 @@ pub fn validate_path(path: &Path) -> Result<(), Error> {
     }
 }
 
-pub fn sanitize_path(path: &Path) -> Result<PathBuf, Error> {
+pub fn sanitize_path(path: &Path) -> Result<PathBuf> {
     if path.as_os_str().is_empty() {
         return Err(Error::PathError(PathBuf::new()));
     }
@@ -68,7 +68,7 @@ pub fn sanitize_path(path: &Path) -> Result<PathBuf, Error> {
     Ok(result)
 }
 
-pub fn ensure_directory(path: &Path) -> Result<(), Error> {
+pub fn ensure_directory(path: &Path) -> Result<()> {
     if path.exists() {
         if path.is_dir() {
             Ok(())

@@ -39,7 +39,7 @@ pub enum Error {
     PackageConflictError(String),
 
     #[error("Package files damaged {0}")]
-    PackageFilesDamaged(Package),
+    PackageFilesDamaged(String),
 
     #[error("Incompatible architecture for package {0}")]
     IncompatibleArchitecture(Package),

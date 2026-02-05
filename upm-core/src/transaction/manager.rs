@@ -5,14 +5,11 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 
-use crate::transaction::transaction;
 use crate::transaction::{StepStatus, TransactionStep};
 use crate::transaction::{Transaction, TransactionStatus};
-use crate::types::Error;
 use crate::types::Package;
+use crate::types::{Error, Result};
 use crate::utils;
-
-pub type Result<T> = std::result::Result<T, Error>;
 // ============================================================================
 // Transaction manager
 // ============================================================================

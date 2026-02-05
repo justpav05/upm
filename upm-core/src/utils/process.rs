@@ -6,7 +6,7 @@ use std::ffi::CStr;
 use std::fs;
 use std::io;
 
-use crate::types::Error;
+use crate::types::{Error, Result};
 // ============================================================================
 // Utils process functions
 // ============================================================================
@@ -15,7 +15,7 @@ pub fn process_exists(pid: u32) -> bool {
     fs::metadata(proc_path).is_ok()
 }
 
-pub fn kill_process(pid: u32) -> Result<(), Error> {
+pub fn kill_process(pid: u32) -> Result<()> {
     if !process_exists(pid) {
         return Err(Error::ProcessNotFound(pid));
     }
@@ -28,7 +28,7 @@ pub fn kill_process(pid: u32) -> Result<(), Error> {
     Ok(())
 }
 
-pub fn get_current_user() -> Result<String, Error> {
+pub fn get_current_user() -> Result<String> {
     let uid = unsafe { getuid() };
     let pw_ptr = unsafe { getpwuid(uid) };
 
