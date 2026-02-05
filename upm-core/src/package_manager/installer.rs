@@ -1,16 +1,11 @@
 // ============================================================================
 // Imports
 // ============================================================================
-
 use nix::sys::stat::Mode;
 use nix::unistd::{Gid, Uid, chown};
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 use tokio::fs;
-
-// ============================================================================
-// Imports from crate
-// ============================================================================
 
 use crate::types::error::PackageError;
 use crate::types::package::operation::{InstallOptions, RemoveOptions};
