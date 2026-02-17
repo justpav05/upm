@@ -1,6 +1,10 @@
-[package]
-name = "upac"
-version = "0.1.0"
-edition = "2024"
+[workspace]
+members = ["crates/core", "crates/core/database"]
+resolver = "2"
 
-[dependencies]
+[workspace.package]
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/justpav05/upm"
+authors = ["justpav05", "afeistel"]
+rust-version = "1.83"

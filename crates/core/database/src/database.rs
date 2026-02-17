@@ -1,0 +1,264 @@
+use crate::index::PackageIndex;
+use crate::{Database, Error, Result, read_toml, write_toml};
+use core::types::{PackageInfo, PackageMetadata};
+use std::collections::HashMap;
+use std::fs;
+use std::path::{Path, PathBuf};
+
+pub struct FileDatabase {
+    database_path: PathBuf,
+    index: PackageIndex,
+    file_map: HashMap<PathBuf, String>,
+}
+
+impl FileDatabase {
+    pub fn new(database_path: PathBuf) -> Result<Self> {
+        FileDatabase::ensure_directory(&database_path)?;
+        FileDatabase::ensure_directory(&database_path.join("packages"))?;
+
+        let index = PackageIndex::load(database_path.join("index.toml"))?;
+        let file_map = {
+            let file_map_path = database_path.join("file_map.toml");
+            if file_map_path.exists() {
+                read_toml(&file_map_path)?
+            } else {
+                HashMap::default()
+            }
+        };
+
+        Ok(Self {
+            database_path,
+            index,
+            file_map,
+        })
+    }
+
+    fn ensure_directory(path: &Path) -> Result<()> {
+        if path.exists() {
+            if path.is_dir() {
+                Ok(())
+            } else {
+                Err(Error::PathError(path.to_path_buf()))
+            }
+        } else {
+            fs::create_dir_all(path).map_err(Error::from)
+        }
+    }
+}
+
+impl Database for FileDatabase {
+    fn add_package(&mut self, package_info: &PackageInfo) -> Result<()> {
+        let package_path_dir = self.database_path.join("packages").join(&package_info.name);
+        FileDatabase::ensure_directory(&package_path_dir)?;
+
+        let metadata_path = package_path_dir.join("metadata.toml");
+        write_toml(&metadata_path, package_info)?;
+
+        let files_path = package_path_dir.join("files.list");
+        write_toml(&files_path, package_info)?;
+
+        self.index.insert(
+            &package_info.name,
+            &package_info.version,
+            &package_info.format,
+        );
+        self.index.save()?;
+
+        Ok(())
+    }
+
+    fn remove_package(&mut self, package_id: &str) -> Result<()> {
+        let files = self.get_files(package_id)?;
+
+        for file in files {
+            self.unregister_file(&file)?;
+        }
+
+        self.index.remove(package_id);
+        self.index.save()?;
+
+        let package_dir = self.database_path.join("packages").join(package_id);
+        if package_dir.exists() {
+            fs::remove_dir_all(&package_dir)?;
+        }
+
+        Ok(())
+    }
+
+    fn get_package(&self, package_id: &str) -> Result<Option<PackageInfo>> {
+        let metadata_path = self
+            .database_path
+            .join("packages")
+            .join(package_id)
+            .join("metadata.toml");
+
+        if !metadata_path.exists() {
+            return Ok(None);
+        }
+
+        let package = read_toml(&metadata_path)?;
+
+        Ok(Some(package))
+    }
+
+    fn list_all_packages(&self) -> Result<Vec<PackageInfo>> {
+        let packages = self.index.list_all().into_iter().cloned().collect();
+        Ok(packages)
+    }
+
+    fn register_file(&mut self, package_id: &str, file_path: &Path) -> Result<()> {
+        self.file_map
+            .insert(file_path.to_path_buf(), package_id.to_string());
+        write_toml(&self.database_path.join("file_map.toml"), &self.file_map)?;
+
+        let files_list = self
+            .database_path
+            .join("packages")
+            .join(package_id)
+            .join("files.list");
+        let mut content = fs::read_to_string(&files_list).unwrap_or_default();
+
+        content.push_str(&format!("{}\n", file_path.display()));
+        fs::write(&files_list, content)?;
+
+        Ok(())
+    }
+
+    fn unregister_file(&mut self, file_path: &Path) -> Result<()> {
+        if let Some(package_name) = self.file_map.remove(file_path).clone() {
+            write_toml(&self.database_path.join("file_map.toml"), &self.file_map)?;
+
+            let files_list = self
+                .database_path
+                .join("packages")
+                .join(&package_name)
+                .join("files.list");
+
+            if files_list.exists() {
+                let content = fs::read_to_string(&files_list)?;
+                let new_content: String = content
+                    .lines()
+                    .filter(|line| Path::new(line.trim()) != file_path)
+                    .map(|line| format!("{}\n", line))
+                    .collect();
+                fs::write(&files_list, new_content)?;
+            }
+        }
+
+        Ok(())
+    }
+
+    fn get_files(&self, package_id: &str) -> Result<Vec<PathBuf>> {
+        let files_list_path = self
+            .database_path
+            .join("packages")
+            .join(package_id)
+            .join("files.list");
+
+        if !files_list_path.exists() {
+            return Ok(Vec::new());
+        }
+
+        let files_list = fs::read_to_string(&files_list_path)?;
+        Ok(files_list
+            .lines()
+            .filter(|line| !line.trim().is_empty())
+            .map(|line| PathBuf::from(line.trim()))
+            .collect())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use core::types::PackageInfo;
+    use tempfile::tempdir;
+
+    fn make_package() -> PackageInfo {
+        PackageInfo {
+            name: "firefox".to_string(),
+            version: "120.0".to_string(),
+            format: "deb".to_string(),
+        }
+    }
+
+    #[test]
+    fn test_add_and_get() {
+        let dir = tempdir().unwrap();
+        let mut db = FileDatabase::new(dir.path().to_path_buf()).unwrap();
+        let package = make_package();
+
+        db.add_package(&package).unwrap();
+
+        let result = db.get_package("firefox").unwrap();
+        assert!(result.is_some());
+    }
+
+    #[test]
+    fn test_remove_package() {
+        let dir = tempdir().unwrap();
+        let mut db = FileDatabase::new(dir.path().to_path_buf()).unwrap();
+        let package = make_package();
+
+        db.add_package(&package).unwrap();
+        db.remove_package("firefox").unwrap();
+
+        let result = db.get_package("firefox").unwrap();
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_list_all() {
+        let dir = tempdir().unwrap();
+        let mut db = FileDatabase::new(dir.path().to_path_buf()).unwrap();
+
+        db.add_package(&make_package()).unwrap();
+
+        let list = db.list_all_packages().unwrap();
+        assert_eq!(list.len(), 1);
+        assert_eq!(list[0].name, "firefox");
+    }
+
+    #[test]
+    fn test_register_and_get_files() {
+        let dir = tempdir().unwrap();
+        let mut db = FileDatabase::new(dir.path().to_path_buf()).unwrap();
+        let package = make_package();
+
+        db.add_package(&package).unwrap();
+        db.register_file("firefox", Path::new("/usr/bin/firefox"))
+            .unwrap();
+
+        let files = db.get_files("firefox").unwrap();
+        assert!(files.contains(&PathBuf::from("/usr/bin/firefox")));
+    }
+
+    #[test]
+    fn test_unregister_file() {
+        let dir = tempdir().unwrap();
+        let mut db = FileDatabase::new(dir.path().to_path_buf()).unwrap();
+        let package = make_package();
+
+        db.add_package(&package).unwrap();
+        db.register_file("firefox", Path::new("/usr/bin/firefox"))
+            .unwrap();
+        db.unregister_file(Path::new("/usr/bin/firefox")).unwrap();
+
+        let files = db.get_files("firefox").unwrap();
+        assert!(!files.contains(&PathBuf::from("/usr/bin/firefox")));
+    }
+
+    #[test]
+    fn test_persist_after_reload() {
+        let dir = tempdir().unwrap();
+
+        {
+            let mut db = FileDatabase::new(dir.path().to_path_buf()).unwrap();
+            db.add_package(&make_package()).unwrap();
+        }
+
+        let db = FileDatabase::new(dir.path().to_path_buf()).unwrap();
+        let result = db.get_package("firefox").unwrap();
+        assert!(result.is_some());
+    }
+}
