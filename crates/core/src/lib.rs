@@ -1,6 +1,9 @@
 use regex::Regex;
 use std::num::NonZeroU64;
 
+pub mod backend;
+pub mod installer;
+pub mod lock;
 pub mod types;
 
 trait UpacPkg {
