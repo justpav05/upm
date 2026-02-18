@@ -89,7 +89,7 @@ mod tests {
     use tempfile::tempdir;
 
     #[test]
-    fn test_insert_and_get() {
+    fn insert_and_get_index() {
         let dir = tempdir().unwrap();
         let mut index = PackageIndex::load(dir.path().join("index.toml")).unwrap();
 
@@ -101,7 +101,7 @@ mod tests {
     }
 
     #[test]
-    fn test_remove() {
+    fn remove_from_index() {
         let dir = tempdir().unwrap();
         let mut index = PackageIndex::load(dir.path().join("index.toml")).unwrap();
 
@@ -112,7 +112,7 @@ mod tests {
     }
 
     #[test]
-    fn test_save_and_reload() {
+    fn save_and_reload_index() {
         let dir = tempdir().unwrap();
         let path = dir.path().join("index.toml");
 
@@ -125,7 +125,7 @@ mod tests {
     }
 
     #[test]
-    fn test_search() {
+    fn search_in_index() {
         let dir = tempdir().unwrap();
         let mut index = PackageIndex::load(dir.path().join("index.toml")).unwrap();
 

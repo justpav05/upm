@@ -8,6 +8,7 @@ pub enum Error {
     IoError(std::io::Error),
     TomlError(String),
     NotFound,
+    LockError,
     PathError(PathBuf),
 }
 
