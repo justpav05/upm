@@ -1,7 +1,11 @@
 [package]
 name = "database"
 version = "0.1.0"
-edition = "2024"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+rust-version.workspace = true
 
 [dependencies]
 core = { path = ".." }

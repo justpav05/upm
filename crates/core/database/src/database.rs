@@ -1,5 +1,5 @@
 use crate::index::PackageIndex;
-use crate::{Database, Error, Result, read_toml, write_toml};
+use crate::{read_toml, write_toml, Database, Error, Result};
 use core::lock::{ExclusiveLock, SharedLock};
 use core::types::PackageInfo;
 use std::collections::HashMap;
@@ -171,12 +171,12 @@ impl Database for FileDatabase {
         let lock_path = self.database_path.join("database.lock");
         let _lock = SharedLock::acquire(&lock_path).map_err(|_| Error::LockError)?;
 
-        let files_list_path = self
-            .database_path
-            .join("packages")
-            .join(package_id)
-            .join("files.list");
+        let package_dir = self.database_path.join("packages").join(package_id);
+        if !package_dir.exists() {
+            return Ok(Vec::new());
+        }
 
+        let files_list_path = package_dir.join("files.list");
         if !files_list_path.exists() {
             return Ok(Vec::new());
         }

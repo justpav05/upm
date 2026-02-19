@@ -2,8 +2,8 @@ use regex::Regex;
 use std::num::NonZeroU64;
 
 pub mod backend;
-pub mod installer;
 pub mod lock;
+pub mod mock;
 pub mod types;
 
 trait UpacPkg {

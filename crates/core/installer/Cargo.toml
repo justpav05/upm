@@ -1,8 +1,14 @@
 [package]
 name = "installer"
 version = "0.1.0"
-edition = "2024"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+rust-version.workspace = true
 
 [dependencies]
 core = { path = ".." }
-database = { path = "../core/database" }
+database = { path = "../database" }
+nix = { version = "0.28", features = ["fs", "user"] }
+tempfile = "3.8"
