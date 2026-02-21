@@ -1,7 +1,7 @@
 use core::backend::ExtractedPackage;
 use std::path::{Path, PathBuf};
 
-mod installer;
+pub mod installer;
 
 pub type Result<T> = std::result::Result<T, InstallerError>;
 

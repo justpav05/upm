@@ -1,6 +1,6 @@
-use core::types::{PackageInfo, PackageMetadata};
-use serde::Serialize;
+use core::types::PackageInfo;
 use serde::de::DeserializeOwned;
+use serde::Serialize;
 use std::path::{Path, PathBuf};
 
 #[derive(Debug)]
