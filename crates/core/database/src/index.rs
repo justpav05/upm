@@ -1,8 +1,12 @@
-use crate::{Error, Result, read_toml, write_toml};
+use crate::{Error, Result, Index};
+use crate::helpers::{read_toml, write_toml};
+
 use core::types::PackageInfo;
+
 use serde::{Deserialize, Serialize};
+
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use std::path::{PathBuf, Path};
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct PackageIndex {
@@ -11,23 +15,7 @@ pub struct PackageIndex {
 }
 
 impl PackageIndex {
-    pub fn load(index_path: PathBuf) -> Result<Self> {
-        let packages = if index_path.exists() {
-            read_toml(&index_path)?
-        } else {
-            HashMap::default()
-        };
-        Ok(Self {
-            index_path,
-            packages,
-        })
-    }
-
-    pub fn save(&self) -> Result<()> {
-        write_toml(&self.index_path, &self.packages)
-    }
-
-    pub fn rebuild(packages_dir: &Path) -> Result<Self> {
+	fn rebuild(packages_dir: &Path) -> Result<Self> {
         let mut packages = HashMap::default();
         let index_path = packages_dir
             .parent()
@@ -50,8 +38,26 @@ impl PackageIndex {
             packages,
         })
     }
+}
 
-    pub fn insert(&mut self, name: &str, version: &str, format: &str) {
+impl Index for PackageIndex {
+    fn load(index_path: PathBuf) -> Result<Self> {
+        let packages = if index_path.exists() {
+            read_toml(&index_path)?
+        } else {
+            HashMap::default()
+        };
+        Ok(Self {
+            index_path,
+            packages,
+        })
+    }
+
+    fn save(&self) -> Result<()> {
+        write_toml(&self.index_path, &self.packages)
+    }
+
+    fn insert(&mut self, name: &str, version: &str, format: &str) {
         let package_info = PackageInfo {
             name: String::from(name),
             version: String::from(version),
@@ -62,15 +68,15 @@ impl PackageIndex {
             .insert(package_info.name.clone(), package_info);
     }
 
-    pub fn remove(&mut self, package_info: &str) {
+    fn remove(&mut self, package_info: &str) {
         self.packages.remove(package_info);
     }
 
-    pub fn get(&self, package_info: &str) -> Option<&PackageInfo> {
+    fn get(&self, package_info: &str) -> Option<&PackageInfo> {
         self.packages.get(package_info)
     }
 
-    pub fn search(&self, query: &str) -> Vec<&PackageInfo> {
+    fn search(&self, query: &str) -> Vec<&PackageInfo> {
         let lowercase_query = query.to_lowercase();
         self.packages
             .values()
@@ -78,7 +84,7 @@ impl PackageIndex {
             .collect()
     }
 
-    pub fn list_all(&self) -> Vec<&PackageInfo> {
+    fn list_all(&self) -> Vec<&PackageInfo> {
         self.packages.values().collect()
     }
 }

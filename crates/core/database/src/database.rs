@@ -1,7 +1,11 @@
 use crate::index::PackageIndex;
-use crate::{read_toml, write_toml, Database, Error, Result};
+use crate::helpers::{ensure_directory, write_toml, read_toml};
+use crate::{Database, Error, Result, Index};
+
 use core::lock::{ExclusiveLock, SharedLock};
 use core::types::PackageInfo;
+
+use std::any::Any;
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -14,8 +18,8 @@ pub struct FileDatabase {
 
 impl FileDatabase {
     pub fn new(database_path: PathBuf) -> Result<Self> {
-        FileDatabase::ensure_directory(&database_path)?;
-        FileDatabase::ensure_directory(&database_path.join("packages"))?;
+        ensure_directory(&database_path)?;
+        ensure_directory(&database_path.join("packages"))?;
 
         let index = PackageIndex::load(database_path.join("index.toml"))?;
         let file_map = {
@@ -33,18 +37,6 @@ impl FileDatabase {
             file_map,
         })
     }
-
-    fn ensure_directory(path: &Path) -> Result<()> {
-        if path.exists() {
-            if path.is_dir() {
-                Ok(())
-            } else {
-                Err(Error::PathError(path.to_path_buf()))
-            }
-        } else {
-            fs::create_dir_all(path).map_err(Error::from)
-        }
-    }
 }
 
 impl Database for FileDatabase {
@@ -53,7 +45,7 @@ impl Database for FileDatabase {
         let _lock = ExclusiveLock::acquire(&lock_path).map_err(|_| Error::LockError)?;
 
         let package_path_dir = self.database_path.join("packages").join(&package_info.name);
-        FileDatabase::ensure_directory(&package_path_dir)?;
+        ensure_directory(&package_path_dir)?;
 
         let metadata_path = package_path_dir.join("metadata.toml");
         write_toml(&metadata_path, package_info)?;
@@ -188,6 +180,8 @@ impl Database for FileDatabase {
             .map(|line| PathBuf::from(line.trim()))
             .collect())
     }
+
+    fn as_any(&self) -> &dyn Any { self }
 }
 
 #[cfg(test)]

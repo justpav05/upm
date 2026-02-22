@@ -1,0 +1,32 @@
+use crate::{Error, Result};
+
+use serde::de::DeserializeOwned;
+use serde::Serialize;
+
+use std::path::Path;
+use std::fs;
+
+pub(crate) fn read_toml<T: DeserializeOwned>(path: &Path) -> Result<T> {
+    let content = fs::read_to_string(path)?;
+    Ok(toml::from_str(&content)?)
+}
+
+pub(crate) fn write_toml<T: Serialize>(path: &Path, value: &T) -> Result<()> {
+    let content = toml::to_string_pretty(value)?;
+    let tmp = path.with_extension("tmp");
+    fs::write(&tmp, content)?;
+    fs::rename(&tmp, path)?;
+    Ok(())
+}
+
+pub(crate) fn ensure_directory(path: &Path) -> Result<()> {
+    if path.exists() {
+        if path.is_dir() {
+            Ok(())
+        } else {
+            Err(Error::PathError(path.to_path_buf()))
+        }
+    } else {
+        fs::create_dir_all(path).map_err(Error::from)
+    }
+}

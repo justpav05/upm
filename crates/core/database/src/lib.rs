@@ -1,7 +1,13 @@
 use core::types::PackageInfo;
-use serde::de::DeserializeOwned;
-use serde::Serialize;
+
 use std::path::{Path, PathBuf};
+use std::io;
+
+pub type Result<T> = std::result::Result<T, Error>;
+
+pub mod database;
+pub mod index;
+mod helpers;
 
 #[derive(Debug)]
 pub enum Error {
@@ -12,35 +18,25 @@ pub enum Error {
     PathError(PathBuf),
 }
 
-impl From<std::io::Error> for Error {
-    fn from(e: std::io::Error) -> Self {
-        Error::IoError(e)
+impl From<io::Error> for Error {
+    fn from(err: io::Error) -> Self {
+        Error::IoError(err)
     }
 }
 
-pub type Result<T> = std::result::Result<T, Error>;
-
-pub(crate) fn read_toml<T: DeserializeOwned>(path: &Path) -> Result<T> {
-    let content = std::fs::read_to_string(path)?;
-    toml::from_str(&content).map_err(|e| Error::TomlError(e.to_string()))
+impl From<toml::ser::Error> for Error {
+    fn from(err: toml::ser::Error) -> Self {
+        Error::TomlError(err.to_string())
+    }
 }
 
-pub(crate) fn write_toml<T: Serialize>(path: &Path, value: &T) -> Result<()> {
-    let content = toml::to_string_pretty(value).map_err(|e| Error::TomlError(e.to_string()))?;
-    let tmp = path.with_extension("tmp");
-    std::fs::write(&tmp, content)?;
-    std::fs::rename(&tmp, path)?;
-    Ok(())
+impl From<toml::de::Error> for Error {
+    fn from(err: toml::de::Error) -> Self {
+        Error::TomlError(err.to_string())
+    }
 }
-
-pub mod database;
-pub mod index;
 
 pub trait Database: Send + Sync {
-    // ========================================
-    // CRD operations with packages
-    // ========================================
-
     fn add_package(&mut self, package: &PackageInfo) -> Result<()>;
 
     fn remove_package(&mut self, package_id: &str) -> Result<()>;
@@ -49,13 +45,29 @@ pub trait Database: Send + Sync {
 
     fn list_all_packages(&self) -> Result<Vec<PackageInfo>>;
 
-    // ========================================
-    // File management
-    // ========================================
-
     fn register_file(&mut self, package_id: &str, file_path: &Path) -> Result<()>;
 
     fn unregister_file(&mut self, file_path: &Path) -> Result<()>;
 
     fn get_files(&self, package_id: &str) -> Result<Vec<PathBuf>>;
+
+    fn as_any(&self) -> &dyn std::any::Any;
+}
+
+pub trait Index {
+    fn load(index_path: PathBuf) -> Result<Self>
+    where
+        Self: Sized;
+
+    fn save(&self) -> Result<()>;
+
+    fn insert(&mut self, name: &str, version: &str, format: &str);
+
+    fn remove(&mut self, package_info: &str);
+
+    fn get(&self, package_info: &str) -> Option<&PackageInfo>;
+
+    fn search(&self, query: &str) -> Vec<&PackageInfo>;
+
+    fn list_all(&self) -> Vec<&PackageInfo>;
 }
