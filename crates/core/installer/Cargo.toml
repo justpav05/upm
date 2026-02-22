@@ -10,5 +10,6 @@ rust-version.workspace = true
 [dependencies]
 core = { path = ".." }
 database = { path = "../database" }
+package_ostree = { path = "../package_ostree" }
 nix = { version = "0.28", features = ["fs", "user"] }
 tempfile = "3.8"

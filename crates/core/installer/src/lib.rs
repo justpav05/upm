@@ -1,6 +1,10 @@
 use core::backend::ExtractedPackage;
+
+use package_ostree::errors::OStreeError;
+
 use std::path::{Path, PathBuf};
 
+mod helpers;
 pub mod installer;
 
 pub type Result<T> = std::result::Result<T, InstallerError>;
@@ -10,6 +14,7 @@ pub enum InstallerError {
     IoError(std::io::Error),
     PathNotFoundError(std::io::Error),
     DatabaseError(database::Error),
+    OStreeError(String),
 }
 
 impl From<std::io::Error> for InstallerError {
@@ -36,7 +41,21 @@ impl<T> From<std::sync::PoisonError<T>> for InstallerError {
     }
 }
 
-pub trait Installer: Send + Sync {
+impl From<OStreeError> for InstallerError {
+    fn from(err: OStreeError) -> Self {
+        match err {
+            OStreeError::IoError(e) => InstallerError::IoError(e),
+            OStreeError::NotFound(p) => InstallerError::PathNotFoundError(std::io::Error::other(p.display().to_string())),
+            OStreeError::RepoPathError(p) => InstallerError::IoError(std::io::Error::other(format!("Repo path error: {}", p.display()))),
+            OStreeError::CommitNotFound(s) => InstallerError::OStreeError(s),
+            OStreeError::OSTreeCommitFailed(s) => InstallerError::OStreeError(s),
+            OStreeError::OSTreeFailed(s) => InstallerError::OStreeError(s),
+        }
+    }
+}
+
+
+pub trait Installer {
     fn install_package(&mut self, package: &ExtractedPackage) -> Result<()>;
 
     fn remove_package(&mut self, package_id: &str) -> Result<()>;

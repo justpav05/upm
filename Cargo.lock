@@ -424,6 +424,7 @@ dependencies = [
  "core",
  "database",
  "nix",
+ "package_ostree",
  "tempfile",
 ]
 

@@ -24,3 +24,27 @@ pub struct Dependency {
     pub name: String,
     pub version_req: Option<String>,
 }
+// types.rs
+
+#[derive(Debug, Clone)]
+pub struct PackageDiff {
+    pub added: Vec<String>,
+    pub removed: Vec<String>,
+    pub updated: Vec<String>,
+}
+
+impl PackageDiff {
+    pub fn to_description(&self) -> String {
+        let mut parts = Vec::new();
+        if !self.added.is_empty() {
+            parts.push(format!("added: {}", self.added.join(", ")));
+        }
+        if !self.removed.is_empty() {
+            parts.push(format!("removed: {}", self.removed.join(", ")));
+        }
+        if !self.updated.is_empty() {
+            parts.push(format!("updated: {}", self.updated.join(", ")));
+        }
+        parts.join("; ")
+    }
+}

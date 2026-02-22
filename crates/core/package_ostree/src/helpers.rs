@@ -1,5 +1,7 @@
 use crate::{OStreeError, Result};
 
+use core::types::PackageDiff;
+
 use database::database::{FileDatabase};
 
 use ostree::{MutableTree, Repo, RepoFile};
@@ -94,18 +96,22 @@ pub(crate) fn build_mtree(repo: &Repo, files: &[PathBuf]) -> Result<MutableTree>
     Ok(mtree)
 }
 
-pub(crate) fn write_commit(repo: &Repo, mtree: &MutableTree) -> Result<String> {
+pub(crate) fn write_commit(repo: &Repo, mtree: &MutableTree, diff: &PackageDiff) -> Result<String> {
 	let root_file = repo.write_mtree(mtree, None::<&Cancellable>)?;
 	let root_file: RepoFile = downcast_repo_file(root_file)?;
 
+	let description = diff.to_description();
+
     let commit_hash = repo.write_commit(
         None,
-        Some("upac commit"),
+        Some(description.as_str()),
         None,
         None,
         &root_file,
         None::<&Cancellable>,
     )?;
+
+    parse_diff_metadata(repo, &commit_hash, diff)?;
 
     Ok(commit_hash.to_string())
 }
@@ -165,4 +171,30 @@ pub(crate) fn parse_commit_package_list(repo: &Repo, commit_hash: &str) -> Resul
         .unwrap_or_default();
 
     Ok(packages)
+}
+
+fn parse_diff_metadata(repo: &Repo, commit_hash: &str, diff: &PackageDiff) -> Result<()> {
+    let all_packages: Vec<&str> = diff.added.iter()
+        .chain(diff.updated.iter())
+        .map(|s| s.as_str())
+        .collect();
+
+    let metadata = ostree::glib::VariantDict::new(None);
+
+    metadata.insert("packages", &all_packages.as_slice());
+
+    metadata.insert("added",    &diff.added.iter().map(|s| s.as_str()).collect::<Vec<_>>().as_slice());
+
+    metadata.insert("removed",  &diff.removed.iter().map(|s| s.as_str()).collect::<Vec<_>>().as_slice());
+
+    metadata.insert("updated",  &diff.updated.iter().map(|s| s.as_str()).collect::<Vec<_>>().as_slice());
+
+    repo.write_commit_detached_metadata(
+        commit_hash,
+        Some(&metadata.end()),
+        None::<&Cancellable>,
+    )
+    .map_err(|e| OStreeError::OSTreeFailed(e.to_string()))?;
+
+    Ok(())
 }

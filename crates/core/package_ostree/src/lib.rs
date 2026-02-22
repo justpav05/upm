@@ -1,12 +1,14 @@
 use crate::errors::{OStreeError, Result};
 
+use core::types::PackageDiff;
+
 use database::database::FileDatabase;
 
 use std::time::SystemTime;
 
-pub mod helpers;
-mod errors;
-mod implement;
+pub mod implement;
+pub mod errors;
+mod helpers;
 
 #[derive(Debug, Clone)]
 pub struct CommitInfo {
@@ -21,7 +23,7 @@ pub trait OSTreeRepo {
 
     fn delete_repo(&mut self) -> Result<()>;
 
-    fn create_commit(&self, current_database: &FileDatabase) -> Result<String>;
+    fn create_commit(&self, current_database: &FileDatabase,  diff: &PackageDiff) -> Result<String>;
 
     fn delete_commit(&self, commit_hash: &str) -> Result<()>;
 

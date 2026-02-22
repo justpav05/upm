@@ -2,6 +2,8 @@ use crate::{OSTreeRepo, CommitInfo, Result};
 use crate::errors::OStreeError;
 use crate::helpers::{set_permissions, collect_files, build_mtree, write_commit, read_commit_root, repo_file_info, parse_commit_timestamp, parse_commit_description, parse_commit_package_list};
 
+use core::types::PackageDiff;
+
 use database::database::FileDatabase;
 
 use ostree::{Repo, RepoMode, RepoPruneFlags, RepoCheckoutMode, RepoCheckoutOverwriteMode};
@@ -64,13 +66,13 @@ impl OSTreeRepo for OStreeManager {
         Ok(())
     }
 
-    fn create_commit(&self, database: &FileDatabase) -> Result<String> {
+    fn create_commit(&self, database: &FileDatabase,  diff: &PackageDiff) -> Result<String> {
         let repo = self.repo.as_ref()
             .ok_or_else(|| OStreeError::NotFound(self.repo_path.clone()))?;
 
         let files = collect_files(database)?;
         let mtree = build_mtree(repo, &files)?;
-        write_commit(repo, &mtree)
+        write_commit(repo, &mtree, diff)
     }
 
     fn delete_commit(&self, commit_hash: &str) -> Result<()> {
