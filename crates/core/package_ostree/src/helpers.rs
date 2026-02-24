@@ -4,7 +4,7 @@ use core::types::PackageDiff;
 
 use database::database::{FileDatabase};
 
-use ostree::{MutableTree, Repo, RepoFile};
+use ostree::{MutableTree, Repo, RepoFile, RepoCheckoutMode, RepoCheckoutOverwriteMode};
 use ostree::prelude::{FileExt, Cast};
 use ostree::gio::{File, FileInfo, FileQueryInfoFlags, Cancellable, InputStream};
 use ostree::glib::VariantDict;
@@ -134,6 +134,25 @@ pub(crate) fn repo_file_info(file: &RepoFile) -> Result<FileInfo> {
     Ok(file_info)
 }
 
+pub(crate) fn checkout_to_root(repo: &Repo,
+    commit_hash: &str,
+    root_dir: &Path,
+) -> Result<()> {
+    let root_file = read_commit_root(&repo, commit_hash)?;
+    let source_info = repo_file_info(&root_file)?;
+    let destination = File::for_path(root_dir);
+
+    repo.checkout_tree(
+        RepoCheckoutMode::None,
+        RepoCheckoutOverwriteMode::UnionFiles,
+        &destination,
+        &root_file,
+        &source_info,
+        None::<&Cancellable>,
+    )?;
+
+    Ok(())
+}
 
 pub(crate) fn parse_commit_timestamp(variant: &ostree::glib::Variant) -> Result<SystemTime> {
     let secs = variant

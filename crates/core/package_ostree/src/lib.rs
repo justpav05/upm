@@ -5,6 +5,7 @@ use core::types::PackageDiff;
 use database::database::FileDatabase;
 
 use std::time::SystemTime;
+use std::path::Path;
 
 pub mod implement;
 pub mod errors;
@@ -23,7 +24,7 @@ pub trait OSTreeRepo {
 
     fn delete_repo(&mut self) -> Result<()>;
 
-    fn create_commit(&self, current_database: &FileDatabase,  diff: &PackageDiff) -> Result<String>;
+    fn create_commit(&self, current_database: &FileDatabase,  diff: &PackageDiff, root_dir: &Path) -> Result<String>;
 
     fn delete_commit(&self, commit_hash: &str) -> Result<()>;
 

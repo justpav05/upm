@@ -1,6 +1,6 @@
 use crate::{OSTreeRepo, CommitInfo, Result};
 use crate::errors::OStreeError;
-use crate::helpers::{set_permissions, collect_files, build_mtree, write_commit, read_commit_root, repo_file_info, parse_commit_timestamp, parse_commit_description, parse_commit_package_list};
+use crate::helpers::{set_permissions, collect_files, build_mtree, write_commit, read_commit_root, repo_file_info, parse_commit_timestamp, parse_commit_description, parse_commit_package_list, checkout_to_root};
 
 use core::types::PackageDiff;
 
@@ -10,9 +10,7 @@ use ostree::{Repo, RepoMode, RepoPruneFlags, RepoCheckoutMode, RepoCheckoutOverw
 use ostree::gio::{File, Cancellable};
 use ostree::ObjectType;
 
-
-
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::fs;
 
 pub struct OStreeManager {
@@ -66,13 +64,15 @@ impl OSTreeRepo for OStreeManager {
         Ok(())
     }
 
-    fn create_commit(&self, database: &FileDatabase,  diff: &PackageDiff) -> Result<String> {
+    fn create_commit(&self, database: &FileDatabase,  diff: &PackageDiff, root_dir: &Path) -> Result<String> {
         let repo = self.repo.as_ref()
             .ok_or_else(|| OStreeError::NotFound(self.repo_path.clone()))?;
 
         let files = collect_files(database)?;
         let mtree = build_mtree(repo, &files)?;
-        write_commit(repo, &mtree, diff)
+        let commit_hash = write_commit(repo, &mtree, diff)?;
+        checkout_to_root(repo, &commit_hash, root_dir)?;
+        Ok(commit_hash)
     }
 
     fn delete_commit(&self, commit_hash: &str) -> Result<()> {

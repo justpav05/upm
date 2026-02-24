@@ -56,9 +56,9 @@ impl From<OStreeError> for InstallerError {
 
 
 pub trait Installer {
-    fn install_package(&mut self, package: &ExtractedPackage) -> Result<()>;
+    fn install_packages(&mut self, packages: Vec<&ExtractedPackage>) -> Result<()>;
 
-    fn remove_package(&mut self, package_id: &str) -> Result<()>;
+    fn remove_packages(&mut self, packages: Vec<&str>) -> Result<()>;
 
     fn list_package_files(&self, package_id: &str) -> Result<Option<Vec<PathBuf>>>;
 
