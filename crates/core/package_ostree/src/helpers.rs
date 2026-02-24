@@ -118,8 +118,7 @@ pub(crate) fn write_commit(repo: &Repo, mtree: &MutableTree, diff: &PackageDiff)
 
 pub(crate) fn read_commit_root(repo: &Repo, commit_hash: &str) -> Result<RepoFile> {
     let (root_file, _) = repo
-        .read_commit(commit_hash, None::<&Cancellable>)
-        .map_err(|e| OStreeError::CommitNotFound(e.to_string()))?;
+        .read_commit(commit_hash, None::<&Cancellable>)?;
 
     downcast_repo_file(root_file)
 }
@@ -174,8 +173,7 @@ pub(crate) fn parse_commit_description(variant: &ostree::glib::Variant) -> Resul
 
 pub(crate) fn parse_commit_package_list(repo: &Repo, commit_hash: &str) -> Result<Vec<String>> {
     let metadata = repo
-        .read_commit_detached_metadata(commit_hash, None::<&Cancellable>)
-        .map_err(|e| OStreeError::OSTreeFailed(e.to_string()))?;
+        .read_commit_detached_metadata(commit_hash, None::<&Cancellable>)?;
 
     let Some(metadata) = metadata else {
         return Ok(vec![]);
@@ -212,8 +210,7 @@ fn parse_diff_metadata(repo: &Repo, commit_hash: &str, diff: &PackageDiff) -> Re
         commit_hash,
         Some(&metadata.end()),
         None::<&Cancellable>,
-    )
-    .map_err(|e| OStreeError::OSTreeFailed(e.to_string()))?;
+    )?;
 
     Ok(())
 }

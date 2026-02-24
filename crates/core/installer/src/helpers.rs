@@ -1,4 +1,5 @@
 use crate::Result;
+use crate::events::InstallEvent;
 
 use core::backend::ExtractedPackage;
 use core::types::PackageDiff;
@@ -14,6 +15,7 @@ use package_ostree::OSTreeRepo;
 use std::fs;
 use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
+use std::sync::mpsc::Sender;
 
 pub(crate) fn set_permissions(path: &Path, mode: u32, uid: u32, gid: u32) -> Result<()> {
     fs::set_permissions(path, fs::Permissions::from_mode(mode))?;
@@ -26,9 +28,12 @@ pub(crate) fn stage_files(
     temp_dir: &Path,
     package_dir: &Path,
     root_dir: &Path,
+    event_tx: &Sender<InstallEvent>,
     database: &mut Box<dyn Database>,
 ) -> Result<()> {
-    for file_entry in &extracted.files {
+	let total_count_of_files = extracted.files.len();
+
+    for (file_index, file_entry) in extracted.files.iter().enumerate() {
         let source_path = temp_dir.join(&file_entry.relative_path);
         let package_path = package_dir
             .join(&extracted.name)
@@ -48,6 +53,13 @@ pub(crate) fn stage_files(
 
         let destination_path = root_dir.join(&file_entry.relative_path);
         database.register_file(&extracted.name, &destination_path)?;
+
+        let _ = event_tx.send(
+        InstallEvent::FileInstalled {
+        	path: destination_path,
+         	current: file_index + 1,
+            total: total_count_of_files,
+        });
     }
     Ok(())
 }

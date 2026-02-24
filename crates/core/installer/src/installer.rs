@@ -1,5 +1,5 @@
 use crate::helpers::{stage_files, commit_installation};
-use crate::Installer;
+use crate::events::InstallEvent;
 use crate::InstallerError;
 use crate::Result;
 
@@ -14,156 +14,109 @@ use package_ostree::implement::OStreeManager;
 use package_ostree::OSTreeRepo;
 
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
+use std::sync::mpsc::Sender;
 
 pub struct InstallerManager {
-    database: Box<dyn Database>,
-    root_dir: PathBuf,
-    package_dir: PathBuf,
-    temp_dir: PathBuf,
-    ostree: OStreeManager,
-    ostree_commit: bool,
+    pub(crate) database: Box<dyn Database>,
+    pub(crate) root_dir: PathBuf,
+    pub(crate) package_dir: PathBuf,
+    pub(crate) temp_dir: PathBuf,
+    pub(crate) ostree: OStreeManager,
+    pub(crate) event_tx: Sender<InstallEvent>,
 }
 
 impl InstallerManager {
-    pub fn new(
-        database: Box<dyn Database>,
-        root_dir: PathBuf,
-        package_dir: PathBuf,
-        temp_dir: PathBuf,
-        ostree: OStreeManager,
-        ostree_commit: bool,
-    ) -> Self {
-        Self {
-            database,
-            root_dir,
-            package_dir,
-            temp_dir,
-            ostree,
-            ostree_commit,
-        }
+	fn emit(&self, event: InstallEvent) {
+    	let _ = self.event_tx.send(event);
     }
 
-    fn as_file_database(&self) -> Result<&FileDatabase> {
+    pub(crate) fn fail(&self, package: &str, err: InstallerError) -> InstallerError {
+           self.emit(InstallEvent::Failed {
+               package: package.to_string(),
+               reason: err.to_string(),
+           });
+           err // ← возвращаем ошибку
+       }
+
+    pub(crate) fn as_file_database(&self) -> Result<&FileDatabase> {
         self.database
             .as_any()
             .downcast_ref::<FileDatabase>()
             .ok_or_else(|| InstallerError::OStreeError("Database is not FileDatabase".into()))
     }
 
-    fn install_package(&mut self, extracted: &ExtractedPackage) -> Result<()> {
+    pub(crate) fn install_package(&mut self, extracted: &ExtractedPackage, ostree_backup: bool) -> Result<()> {
+   		let name = &extracted.name;
+
+        self.emit(InstallEvent::InstallStarted {
+            package: name.clone(),
+            total_files: extracted.files.len(),
+        });
+
         let package_info = PackageInfo {
         	name: extracted.name.clone(),
          	version: extracted.version.clone(),
            	format: extracted.format.clone(),
         };
-        self.database.add_package(&package_info)?;
+
+        self.database.add_package(&package_info).map_err(|e| self.fail(name, e.into()))?;
+
 
         stage_files(
         	extracted,
             &self.temp_dir,
             &self.package_dir,
             &self.root_dir,
-            &mut self.database)?;
+            &self.event_tx,
+            &mut self.database)
+        .map_err(|err| self.fail(name, err))?;
 
-        let database = self.as_file_database()?;
-        commit_installation(&self.ostree, database, &extracted.name, &self.root_dir)?;
+        if ostree_backup {
+        	let database = self.as_file_database().map_err(|err| self.fail(name, err))?;
+
+      		let commit_hash = commit_installation(&self.ostree, database, name, &self.root_dir)
+            .map_err(|err| self.fail(name, err))?;
+
+         	self.emit(InstallEvent::CommitCreated { commit_hash: commit_hash.clone() });
+        }
+
+        self.emit(InstallEvent::InstallFinished { package: extracted.name.clone() });
 
         Ok(())
     }
 
-    fn remove_package(&mut self, package_name: &str) -> Result<()> {
-   		let files = self.database.get_files(package_name)?;
+    pub(crate) fn remove_package(&mut self, package_name: &str, ostree_backup: bool) -> Result<()> {
+   		self.emit(InstallEvent::RemoveStarted { package: package_name.to_string() });
+
+    	let files = self.database.get_files(package_name).map_err(|err| self.fail(package_name, err.into()))?;
 
      	for file_path in files {
-        	if file_path.exists() {
-            	fs::remove_file(&file_path)?;
-        	}
-         	self.database.unregister_file(&file_path)?;
+     		if file_path.exists() {
+            	fs::remove_file(&file_path).map_err(|err| self.fail(package_name, err.into()))?;
+         	}
+
+         	self.database.unregister_file(&file_path).map_err(|err| self.fail(package_name, err.into()))?;
+
+          	self.emit(InstallEvent::FileRemoved { path: file_path });
       	}
 
-       	self.database.remove_package(&package_name)?;
+       self.database.remove_package(package_name).map_err(|err| self.fail(package_name, err.into()))?;
 
-        let diff = PackageDiff {
-        	added: vec![],
-         	removed: vec![package_name.to_string()],
-          	updated: vec![],
-        };
+        if ostree_backup {
+            let diff = PackageDiff {
+                added: vec![],
+                removed: vec![package_name.to_string()],
+                updated: vec![],
+            };
 
-        let database = self.as_file_database()?;
-        self.ostree.create_commit(database, &diff, &self.root_dir)?;
+            let database = self.as_file_database().map_err(|err| self.fail(package_name, err))?;
+
+            let commit_hash = self.ostree.create_commit(database, &diff, &self.root_dir).map_err(|err| self.fail(package_name, err.into()))?;
+
+            self.emit(InstallEvent::CommitCreated { commit_hash });
+        }
 
         Ok(())
     }
 }
-
-impl Installer for InstallerManager {
-    fn install_packages(&mut self, extracted_packages: Vec<&ExtractedPackage>) -> Result<()> {
-        for extracted in extracted_packages {
-            self.install_package(extracted)?;
-        }
-        Ok(())
-    }
-
-    fn remove_packages(&mut self, packages_name: Vec<&str>) -> Result<()> {
-        for package_name in packages_name {
-            self.remove_package(package_name)?;
-        }
-        Ok(())
-    }
-
-    fn list_package_files(&self, package_id: &str) -> Result<Option<Vec<PathBuf>>> {
-        let files = self.database.get_files(package_id)?;
-
-        if !files.is_empty() {
-            Ok(Some(files))
-        } else {
-            Ok(None)
-        }
-    }
-
-    fn add_file_to_package(&mut self, package_id: &str, file_path: &Path) -> Result<()> {
-        self.database.register_file(package_id, file_path)?;
-        Ok(())
-    }
-
-    fn remove_file_from_package(&mut self, file_path: &Path) -> Result<()> {
-        if file_path.exists() {
-            fs::remove_file(file_path)?;
-        }
-        self.database.unregister_file(file_path)?;
-        Ok(())
-    }
-}
-
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use core::backend::Backend;
-//     use database::database::FileDatabase;
-//     use tempfile::tempdir;
-
-//     #[test]
-//     fn install_and_remove() {
-//         let temp = tempdir().unwrap();
-//         let db_path = temp.path().join("db");
-//         let root_path = temp.path().join("root");
-//         let temp_extract = temp.path().join("extract");
-
-//         std::fs::create_dir_all(&temp_extract).unwrap();
-
-//         let db = Box::new(FileDatabase::new(db_path).unwrap());
-//         let mut installer = InstallerManager::new(db, root_path.clone(), temp_extract.clone());
-
-//         let backend = core::mock::MockBackend;
-//         let extracted = backend
-//             .extract(Path::new("fake.mock"), &temp_extract)
-//             .unwrap();
-
-//         installer.install_package(&extracted).unwrap();
-//         assert!(root_path.join("usr/bin/test-app").exists());
-
-//         installer.remove_package("test-package").unwrap();
-//         assert!(!root_path.join("usr/bin/test-app").exists());
-//     }
-// }

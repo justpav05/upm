@@ -1,10 +1,20 @@
+use crate::events::InstallEvent;
+use crate::installer::InstallerManager;
+
 use core::backend::ExtractedPackage;
+
+use database::Database;
 
 use package_ostree::errors::OStreeError;
 
-use std::path::{Path, PathBuf};
+use package_ostree::implement::OStreeManager;
 
+use std::path::{Path, PathBuf};
+use std::sync::mpsc::Sender;
+
+mod events;
 mod helpers;
+pub mod implement;
 pub mod installer;
 
 pub type Result<T> = std::result::Result<T, InstallerError>;
@@ -41,6 +51,13 @@ impl<T> From<std::sync::PoisonError<T>> for InstallerError {
     }
 }
 
+impl ToString for InstallerError {
+    fn to_string(&self) -> String {
+        format!("{:?}", self)
+    }
+}
+
+
 impl From<OStreeError> for InstallerError {
     fn from(err: OStreeError) -> Self {
         match err {
@@ -56,9 +73,11 @@ impl From<OStreeError> for InstallerError {
 
 
 pub trait Installer {
-    fn install_packages(&mut self, packages: Vec<&ExtractedPackage>) -> Result<()>;
+	fn new(database: Box<dyn Database>, root_dir: PathBuf, package_dir: PathBuf, temp_dir: PathBuf, ostree: OStreeManager, event_tx: Sender<InstallEvent>) -> InstallerManager;
 
-    fn remove_packages(&mut self, packages: Vec<&str>) -> Result<()>;
+    fn install_packages(&mut self, packages: Vec<&ExtractedPackage>, ostree_backup: bool) -> Result<()>;
+
+    fn remove_packages(&mut self, packages: Vec<&str>, ostree_backup: bool) -> Result<()>;
 
     fn list_package_files(&self, package_id: &str) -> Result<Option<Vec<PathBuf>>>;
 

@@ -36,6 +36,12 @@ impl From<toml::de::Error> for Error {
     }
 }
 
+impl ToString for Error {
+    fn to_string(&self) -> String {
+        format!("{:?}", self)
+    }
+}
+
 pub trait Database: Send + Sync {
     fn add_package(&mut self, package: &PackageInfo) -> Result<()>;
 
