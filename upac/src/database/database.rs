@@ -1,9 +1,9 @@
-use crate::index::PackageIndex;
-use crate::helpers::{ensure_directory, write_toml, read_toml};
-use crate::{Database, Error, Result, Index};
+use super::helpers::{ensure_directory, read_toml, write_toml};
+use super::{Database, Error, Index, Result};
+use super::index::PackageIndex;
 
-use core::lock::{ExclusiveLock, SharedLock};
-use core::types::PackageInfo;
+use crate::core::lock::{ExclusiveLock, SharedLock};
+use crate::core::types::PackageInfo;
 
 use std::any::Any;
 use std::collections::HashMap;
@@ -181,13 +181,15 @@ impl Database for FileDatabase {
             .collect())
     }
 
-    fn as_any(&self) -> &dyn Any { self }
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use core::types::PackageInfo;
+    use crate::core::types::PackageInfo;
     use tempfile::tempdir;
 
     fn make_package() -> PackageInfo {

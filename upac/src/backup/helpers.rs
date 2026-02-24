@@ -1,15 +1,13 @@
-use crate::{OStreeError, Result};
+use super::errors::{OStreeError, Result};
 
-use core::types::PackageDiff;
-
-use database::database::{FileDatabase};
+use crate::core::types::PackageDiff;
+use crate::database::database::{FileDatabase};
+use crate::database::Database;
 
 use ostree::{MutableTree, Repo, RepoFile, RepoCheckoutMode, RepoCheckoutOverwriteMode};
 use ostree::prelude::{FileExt, Cast};
 use ostree::gio::{File, FileInfo, FileQueryInfoFlags, Cancellable, InputStream};
 use ostree::glib::VariantDict;
-
-use database::Database;
 
 use nix::unistd::{Uid, Gid, chown};
 

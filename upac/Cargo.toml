@@ -1,5 +1,5 @@
 [package]
-name = "core"
+name = "upac-core-lib"
 version = "0.1.0"
 edition.workspace = true
 license.workspace = true
@@ -9,6 +9,8 @@ rust-version.workspace = true
 
 [dependencies]
 regex = "1.12.3"
+nix = { version = "0.28", features = ["fs", "user", "unistd"] }
 serde = { version = "1.0", features = ["derive"] }
-nix = { version = "0.28", features = ["fs"] }
+ostree = { version = "0.20", optional = true }
 tempfile = "3.8"
+toml = "0.8"

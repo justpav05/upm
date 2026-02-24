@@ -1,16 +1,14 @@
-use crate::Result;
-use crate::events::InstallEvent;
+use super::Result;
+use super::events::InstallEvent;
 
-use core::backend::ExtractedPackage;
-use core::types::PackageDiff;
+use crate::core::backend::ExtractedPackage;
+use crate::core::types::PackageDiff;
+use crate::database::database::FileDatabase;
+use crate::database::Database;
+use crate::backup::implement::OStreeManager;
+use crate::backup::OSTreeRepo;
 
 use nix::unistd::{chown, Gid, Uid};
-
-use database::database::FileDatabase;
-use database::Database;
-
-use package_ostree::implement::OStreeManager;
-use package_ostree::OSTreeRepo;
 
 use std::fs;
 use std::os::unix::fs::PermissionsExt;

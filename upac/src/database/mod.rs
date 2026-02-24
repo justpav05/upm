@@ -1,13 +1,15 @@
-use core::types::PackageInfo;
+use crate::core::types::PackageInfo;
 
-use std::path::{Path, PathBuf};
+use toml::{ser, de};
+
 use std::io;
+use std::path::{Path, PathBuf};
 
 pub type Result<T> = std::result::Result<T, Error>;
 
 pub mod database;
-pub mod index;
 mod helpers;
+pub mod index;
 
 #[derive(Debug)]
 pub enum Error {
@@ -24,14 +26,14 @@ impl From<io::Error> for Error {
     }
 }
 
-impl From<toml::ser::Error> for Error {
-    fn from(err: toml::ser::Error) -> Self {
+impl From<ser::Error> for Error {
+    fn from(err: ser::Error) -> Self {
         Error::TomlError(err.to_string())
     }
 }
 
-impl From<toml::de::Error> for Error {
-    fn from(err: toml::de::Error) -> Self {
+impl From<de::Error> for Error {
+    fn from(err: de::Error) -> Self {
         Error::TomlError(err.to_string())
     }
 }

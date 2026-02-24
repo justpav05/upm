@@ -1,4 +1,4 @@
-use crate::backend::{Backend, ExtractedPackage, FileEntry, Result};
+use super::backend::{Backend, ExtractedPackage, FileEntry, Result};
 use std::path::{Path, PathBuf};
 
 pub struct MockBackend;
@@ -22,6 +22,20 @@ impl Backend for MockBackend {
         std::fs::write(&test_file, "#!/bin/sh\necho test")?;
 
         Ok(ExtractedPackage {
+            name: "test-package".to_string(),
+            version: "1.0.0".to_string(),
+            format: "mock".to_string(),
+            files: vec![FileEntry {
+                relative_path: PathBuf::from("usr/bin/test-app"),
+                permissions: 0o755,
+                owner: 0,
+                group: 0,
+            }],
+        })
+    }
+
+    fn read_metadata(&self, path: &Path) -> Result<PackageMetadata> {
+        Ok(PackageMetadata {
             name: "test-package".to_string(),
             version: "1.0.0".to_string(),
             format: "mock".to_string(),

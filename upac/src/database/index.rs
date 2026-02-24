@@ -1,12 +1,12 @@
-use crate::{Error, Result, Index};
-use crate::helpers::{read_toml, write_toml};
+use super::helpers::{read_toml, write_toml};
+use super::{Error, Index, Result};
 
-use core::types::PackageInfo;
+use crate::core::types::PackageInfo;
 
 use serde::{Deserialize, Serialize};
 
 use std::collections::HashMap;
-use std::path::{PathBuf, Path};
+use std::path::{Path, PathBuf};
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct PackageIndex {
@@ -15,7 +15,7 @@ pub struct PackageIndex {
 }
 
 impl PackageIndex {
-	fn rebuild(packages_dir: &Path) -> Result<Self> {
+    fn rebuild(packages_dir: &Path) -> Result<Self> {
         let mut packages = HashMap::default();
         let index_path = packages_dir
             .parent()
