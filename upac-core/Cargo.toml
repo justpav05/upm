@@ -9,7 +9,7 @@ rust-version.workspace = true
 
 [dependencies]
 regex = "1.12.3"
-nix = { version = "0.28", features = ["fs", "user", "unistd"] }
+nix = { version = "0.28", features = ["fs", "user"] }
 serde = { version = "1.0", features = ["derive"] }
 ostree = { version = "0.20", optional = true }
 tempfile = "3.8"
