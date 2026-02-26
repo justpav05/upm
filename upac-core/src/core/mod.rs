@@ -1,11 +1,11 @@
 use regex::Regex;
 use std::num::NonZeroU64;
 
+pub mod helpers;
 pub mod backend;
 pub mod lock;
-pub mod mock;
-pub mod types;
-
+pub mod types;#[allow(dead_code)]
+#[allow(dead_code)]
 trait UpacPkg {
     fn install(&self, package: &str);
     fn remove(&self, package: &str);
@@ -13,14 +13,14 @@ trait UpacPkg {
     fn search(&self, package: &str);
     fn upgrade(&self, package: &str);
 }
-
+#[allow(dead_code)]
 trait UpacDisplay {
     fn metadata(&self, package: &str);
     fn files(&self, package: &str);
     fn dependencies(&self, package: &str);
     fn updependencies(&self, package: &str);
 }
-
+#[allow(dead_code)]
 trait UpacRepo {
     fn add(&self, package: &str);
     fn remove(&self, package: &str);
@@ -28,13 +28,14 @@ trait UpacRepo {
     fn edit(&self, package: &str);
     fn rank(&self, package: &str);
 }
+#[allow(dead_code)]
 #[derive(Default)]
 struct InstallOptions {
     yes: bool,
     force: bool,
     download: bool,
 }
-
+#[allow(dead_code)]
 #[derive(Default)]
 struct RemoveOptions {
     yes: bool,
@@ -43,21 +44,21 @@ struct RemoveOptions {
     force: bool,
     dry_run: bool,
 }
-
+#[allow(dead_code)]
 #[derive(Default)]
 struct UpdateOptions {
     yes: bool,
     force: bool,
     no_deps: bool,
 }
-
+#[allow(dead_code)]
 #[derive(Default)]
 struct UpgdateOptions {
     yes: bool,
     force: bool,
     check_only: bool,
 }
-
+#[allow(dead_code)]
 struct SearchOptions {
     exact: bool,
     description: bool,

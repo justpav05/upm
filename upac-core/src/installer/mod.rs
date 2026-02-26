@@ -1,13 +1,14 @@
-use crate::events::InstallEvent;
-use crate::installer::InstallerManager;
+use crate::database::database::FileDatabase;
+use crate::installer::installer::InstallerManager;
+use crate::installer::events::InstallEvent;
 
-use core::backend::ExtractedPackage;
+use crate::core::backend::ExtractedPackage;
 
-use database::Database;
+use crate::database::Database;
+use crate::database;
 
-use package_ostree::errors::OStreeError;
-
-use package_ostree::implement::OStreeManager;
+use crate::backup::implement::OStreeManager;
+use crate::backup::errors::OStreeError;
 
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::Sender;
@@ -73,7 +74,7 @@ impl From<OStreeError> for InstallerError {
 
 
 pub trait Installer {
-	fn new(database: Box<dyn Database>, root_dir: PathBuf, package_dir: PathBuf, temp_dir: PathBuf, ostree: OStreeManager, event_tx: Sender<InstallEvent>) -> InstallerManager;
+	fn new(database: Box<dyn Database>, file_database: FileDatabase, root_dir: PathBuf, package_dir: PathBuf, temp_dir: PathBuf, ostree: OStreeManager, event_tx: Sender<InstallEvent>) -> InstallerManager;
 
     fn install_packages(&mut self, packages: Vec<&ExtractedPackage>, ostree_backup: bool) -> Result<()>;
 

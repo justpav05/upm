@@ -1,17 +1,17 @@
-use crate::helpers::{stage_files, commit_installation};
-use crate::events::InstallEvent;
-use crate::InstallerError;
-use crate::Result;
+use super::helpers::{stage_files, commit_installation};
+use super::events::InstallEvent;
+use super::InstallerError;
+use super::Result;
 
-use core::backend::ExtractedPackage;
-use core::types::PackageDiff;
-use core::types::PackageInfo;
+use crate::core::backend::ExtractedPackage;
+use crate::core::types::PackageDiff;
+use crate::core::types::PackageInfo;
 
-use database::database::FileDatabase;
-use database::Database;
+use crate::database::database::FileDatabase;
+use crate::database::Database;
 
-use package_ostree::implement::OStreeManager;
-use package_ostree::OSTreeRepo;
+use crate::backup::implement::OStreeManager;
+use crate::backup::OSTreeRepo;
 
 use std::fs;
 use std::path::PathBuf;
@@ -19,6 +19,7 @@ use std::sync::mpsc::Sender;
 
 pub struct InstallerManager {
     pub(crate) database: Box<dyn Database>,
+    pub(crate) file_database: FileDatabase,
     pub(crate) root_dir: PathBuf,
     pub(crate) package_dir: PathBuf,
     pub(crate) temp_dir: PathBuf,
@@ -38,13 +39,6 @@ impl InstallerManager {
            });
            err // ← возвращаем ошибку
        }
-
-    pub(crate) fn as_file_database(&self) -> Result<&FileDatabase> {
-        self.database
-            .as_any()
-            .downcast_ref::<FileDatabase>()
-            .ok_or_else(|| InstallerError::OStreeError("Database is not FileDatabase".into()))
-    }
 
     pub(crate) fn install_package(&mut self, extracted: &ExtractedPackage, ostree_backup: bool) -> Result<()> {
    		let name = &extracted.name;
@@ -72,11 +66,14 @@ impl InstallerManager {
             &mut self.database)
         .map_err(|err| self.fail(name, err))?;
 
-        if ostree_backup {
-        	let database = self.as_file_database().map_err(|err| self.fail(name, err))?;
+        if self.temp_dir.exists() {
+        	fs::remove_dir_all(&self.temp_dir).map_err(|err| self.fail(name, err.into()))?;
+            fs::create_dir_all(&self.temp_dir).map_err(|err| self.fail(name, err.into()))?;
+        }
 
-      		let commit_hash = commit_installation(&self.ostree, database, name, &self.root_dir)
-            .map_err(|err| self.fail(name, err))?;
+        if ostree_backup {
+       		let commit_hash = commit_installation(&self.ostree, &self.file_database, name, &self.root_dir)
+             .map_err(|err| self.fail(name, err))?;
 
          	self.emit(InstallEvent::CommitCreated { commit_hash: commit_hash.clone() });
         }
@@ -110,9 +107,7 @@ impl InstallerManager {
                 updated: vec![],
             };
 
-            let database = self.as_file_database().map_err(|err| self.fail(package_name, err))?;
-
-            let commit_hash = self.ostree.create_commit(database, &diff, &self.root_dir).map_err(|err| self.fail(package_name, err.into()))?;
+            let commit_hash = self.ostree.create_commit(&self.file_database, &diff, &self.root_dir).map_err(|err| self.fail(package_name, err.into()))?;
 
             self.emit(InstallEvent::CommitCreated { commit_hash });
         }

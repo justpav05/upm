@@ -1,8 +1,10 @@
 use super::{OSTreeRepo, CommitInfo, Result};
 use super::errors::OStreeError;
-use super::helpers::{set_permissions, collect_files, build_mtree, write_commit, read_commit_root, repo_file_info, parse_commit_timestamp, parse_commit_description, parse_commit_package_list, checkout_to_root};
+use super::helpers::{collect_files, build_mtree, write_commit, read_commit_root, repo_file_info, parse_commit_timestamp, parse_commit_description, parse_commit_package_list, checkout_to_root};
 
 use crate::core::types::PackageDiff;
+use crate::core::helpers::set_permissions;
+
 use crate::database::database::FileDatabase;
 
 use ostree::{Repo, RepoMode, RepoPruneFlags, RepoCheckoutMode, RepoCheckoutOverwriteMode};

@@ -1,4 +1,4 @@
-use glib;
+use crate::database;
 
 use std::path::PathBuf;
 
@@ -26,11 +26,11 @@ impl From<nix::Error> for OStreeError {
     }
 }
 
-impl From<glib::Error> for OStreeError {
-    fn from(err: glib::Error) -> Self {
-        OStreeError::OSTreeCommitFailed(err.to_string())
-    }
-}
+// impl From<glib::Error> for OStreeError {
+//     fn from(err: glib::Error) -> Self {
+//         OStreeError::OSTreeCommitFailed(err.to_string())
+//     }
+// }
 
 impl From<ostree::glib::Error> for OStreeError {
     fn from(err: ostree::glib::Error) -> Self {

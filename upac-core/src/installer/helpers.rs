@@ -1,25 +1,19 @@
-use super::Result;
 use super::events::InstallEvent;
+use super::Result;
 
 use crate::core::backend::ExtractedPackage;
+use crate::core::helpers::set_permissions;
 use crate::core::types::PackageDiff;
+
 use crate::database::database::FileDatabase;
 use crate::database::Database;
+
 use crate::backup::implement::OStreeManager;
 use crate::backup::OSTreeRepo;
 
-use nix::unistd::{chown, Gid, Uid};
-
 use std::fs;
-use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
 use std::sync::mpsc::Sender;
-
-pub(crate) fn set_permissions(path: &Path, mode: u32, uid: u32, gid: u32) -> Result<()> {
-    fs::set_permissions(path, fs::Permissions::from_mode(mode))?;
-    chown(path, Some(Uid::from_raw(uid)), Some(Gid::from_raw(gid)))?;
-    Ok(())
-}
 
 pub(crate) fn stage_files(
     extracted: &ExtractedPackage,

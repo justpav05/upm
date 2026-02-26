@@ -1,13 +1,12 @@
-use crate::installer::InstallerManager;
-use crate::events::InstallEvent;
-use crate::Installer;
-use crate::Result;
+use super::installer::InstallerManager;
+use super::events::InstallEvent;
+use super::Installer;
+use super::Result;
 
-use core::backend::ExtractedPackage;
-
-use package_ostree::implement::OStreeManager;
-
-use database::Database;
+use crate::core::backend::ExtractedPackage;
+use crate::backup::implement::OStreeManager;
+use crate::database::Database;
+use crate::database::database::FileDatabase;
 
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::Sender;
@@ -16,13 +15,14 @@ use std::fs;
 impl Installer for InstallerManager {
 	fn new(
         database: Box<dyn Database>,
+        file_database: FileDatabase,
         root_dir: PathBuf,
         temp_dir: PathBuf,
         package_dir: PathBuf,
         ostree: OStreeManager,
         event_tx: Sender<InstallEvent>
     ) -> Self {
-        Self { database, root_dir, temp_dir, package_dir, ostree, event_tx }
+        Self { database, file_database, root_dir, temp_dir, package_dir, ostree, event_tx }
     }
 
     fn install_packages(&mut self, extracted_packages: Vec<&ExtractedPackage>, ostree_backup: bool) -> Result<()> {

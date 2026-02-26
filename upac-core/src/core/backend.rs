@@ -45,14 +45,6 @@ pub struct FileEntry {
     pub group: u32,
 }
 
-impl Drop for ExtractedPackage {
-    fn drop(&mut self) {
-        self.files.iter().for_each(|file| {
-            let _ = std::fs::remove_file(&file.relative_path);
-        });
-    }
-}
-
 pub trait Backend: Send + Sync {
     fn name(&self) -> &str;
     fn supported_formats(&self) -> Vec<&str>;

@@ -9,11 +9,7 @@ use ostree::prelude::{FileExt, Cast};
 use ostree::gio::{File, FileInfo, FileQueryInfoFlags, Cancellable, InputStream};
 use ostree::glib::VariantDict;
 
-use nix::unistd::{Uid, Gid, chown};
-
-use std::fs;
 use std::ffi::OsStr;
-use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, UNIX_EPOCH};
 use std::time::SystemTime;
@@ -23,12 +19,6 @@ use std::time::SystemTime;
 pub(crate) fn downcast_repo_file(file: File) -> Result<RepoFile> {
     file.downcast::<RepoFile>()
         .map_err(|_| OStreeError::OSTreeFailed("Failed to cast gio::File to RepoFile".into()))
-}
-
-pub(crate) fn set_permissions(path: &Path, mode: u32, uid: u32, gid: u32) -> Result<()> {
-    fs::set_permissions(path, fs::Permissions::from_mode(mode))?;
-    chown(path, Some(Uid::from_raw(uid)), Some(Gid::from_raw(gid)))?;
-    Ok(())
 }
 
 pub(crate) fn checksum(repo: &Repo, file: &File) -> Result<String> {

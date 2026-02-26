@@ -5,7 +5,6 @@ use super::index::PackageIndex;
 use crate::core::lock::{ExclusiveLock, SharedLock};
 use crate::core::types::PackageInfo;
 
-use std::any::Any;
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -51,7 +50,8 @@ impl Database for FileDatabase {
         write_toml(&metadata_path, package_info)?;
 
         let files_path = package_path_dir.join("files.list");
-        write_toml(&files_path, package_info)?;
+        fs::write(&files_path, "")?;
+        // TODO: Изменить работу так, чтобы сохранял правильно список файлов
 
         self.index.insert(
             &package_info.name,
@@ -113,7 +113,7 @@ impl Database for FileDatabase {
 
     fn register_file(&mut self, package_id: &str, file_path: &Path) -> Result<()> {
         let lock_path = self.database_path.join("database.lock");
-        let _lock = SharedLock::acquire(&lock_path).map_err(|_| Error::LockError)?;
+        let _lock = ExclusiveLock::acquire(&lock_path).map_err(|_| Error::LockError)?;
 
         self.file_map
             .insert(file_path.to_path_buf(), package_id.to_string());
@@ -179,10 +179,6 @@ impl Database for FileDatabase {
             .filter(|line| !line.trim().is_empty())
             .map(|line| PathBuf::from(line.trim()))
             .collect())
-    }
-
-    fn as_any(&self) -> &dyn Any {
-        self
     }
 }
 

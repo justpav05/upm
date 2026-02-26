@@ -8,8 +8,8 @@ use std::path::{Path, PathBuf};
 pub type Result<T> = std::result::Result<T, Error>;
 
 pub mod database;
-mod helpers;
 pub mod index;
+mod helpers;
 
 #[derive(Debug)]
 pub enum Error {
@@ -58,8 +58,6 @@ pub trait Database: Send + Sync {
     fn unregister_file(&mut self, file_path: &Path) -> Result<()>;
 
     fn get_files(&self, package_id: &str) -> Result<Vec<PathBuf>>;
-
-    fn as_any(&self) -> &dyn std::any::Any;
 }
 
 pub trait Index {

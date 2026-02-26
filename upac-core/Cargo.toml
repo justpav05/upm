@@ -11,6 +11,7 @@ rust-version.workspace = true
 regex = "1.12.3"
 nix = { version = "0.28", features = ["fs", "user"] }
 serde = { version = "1.0", features = ["derive"] }
-ostree = { version = "0.20", optional = true }
+ostree = { version = "0.20" }
 tempfile = "3.8"
+glib = "0.20"
 toml = "0.8"
