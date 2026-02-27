@@ -14,7 +14,7 @@ pub struct PackageInfo {
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PackageMetadata {
-    pub description: String,
+    pub description: Option<String>,
     pub maintainer: Option<String>,
     pub homepage: Option<String>,
     pub license: Option<String>,
