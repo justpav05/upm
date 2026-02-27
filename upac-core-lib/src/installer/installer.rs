@@ -131,14 +131,14 @@ impl Install for Installer {
         Ok(())
     }
 
-    fn install_packages(&mut self, extracted_packages: Vec<&ExtractedPackage>, ostree_backup: bool) -> Result<()> {
+    fn install_packages<'a>(&mut self, extracted_packages: impl IntoIterator<Item = &'a ExtractedPackage>, ostree_backup: bool) -> Result<()> {
         for extracted in extracted_packages {
             self.install_package(extracted, ostree_backup)?;
         }
         Ok(())
     }
 
-    fn remove_packages(&mut self, packages_name: Vec<&str>, ostree_backup: bool) -> Result<()> {
+    fn remove_packages<'a>(&mut self, packages_name: impl IntoIterator<Item = &'a str>, ostree_backup: bool) -> Result<()> {
         for package_name in packages_name {
             self.remove_package(package_name, ostree_backup)?;
         }

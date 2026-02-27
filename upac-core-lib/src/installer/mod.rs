@@ -78,17 +78,29 @@ pub enum InstallEvent {
 }
 
 pub trait Install {
-	fn install_package(&mut self, extracted: &ExtractedPackage, ostree_backup: bool) -> Result<()>;
+    fn install_package(&mut self, package: &ExtractedPackage, ostree_backup: bool) -> Result<()>;
 
-	fn remove_package(&mut self, package_name: &str, ostree_backup: bool) -> Result<()>;
+    fn remove_package(&mut self, package: &str, ostree_backup: bool) -> Result<()>;
 
-    fn install_packages(&mut self, packages: Vec<&ExtractedPackage>, ostree_backup: bool) -> Result<()>;
+    fn list_package_files(&self, package: &str) -> Result<Option<Vec<PathBuf>>>;
 
-    fn remove_packages(&mut self, packages: Vec<&str>, ostree_backup: bool) -> Result<()>;
+    fn add_file_to_package(&mut self, package: &str, path: &Path) -> Result<()>;
 
-    fn list_package_files(&self, package_id: &str) -> Result<Option<Vec<PathBuf>>>;
+    fn remove_file_from_package(&mut self, path: &Path) -> Result<()>;
 
-    fn add_file_to_package(&mut self, package_id: &str, file_path: &Path) -> Result<()>;
+    fn install_packages<'a>(
+        &mut self,
+        packages: impl IntoIterator<Item = &'a ExtractedPackage>,
+        ostree_backup: bool,
+    ) -> Result<()> {
+        packages.into_iter().try_for_each(|package| self.install_package(package, ostree_backup))
+    }
 
-    fn remove_file_from_package(&mut self, file_path: &Path) -> Result<()>;
+    fn remove_packages<'a>(
+        &mut self,
+        packages: impl IntoIterator<Item = &'a str>,
+        ostree_backup: bool,
+    ) -> Result<()> {
+        packages.into_iter().try_for_each(|package| self.remove_package(package, ostree_backup))
+    }
 }
