@@ -13,10 +13,10 @@ use crate::backup::errors::OStreeError;
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::Sender;
 
-mod events;
-mod helpers;
 pub mod implement;
 pub mod installer;
+pub mod events;
+mod helpers;
 
 pub type Result<T> = std::result::Result<T, InstallerError>;
 
