@@ -1,6 +1,6 @@
 use super::helpers::{ensure_directory, read_toml, write_toml};
-use super::{Database, Error, Index, Result};
-use super::index::PackageIndex;
+use super::{DatabaseError, Search, PackageDatabase, Result};
+use super::index::Index;
 
 use crate::core::lock::{ExclusiveLock, SharedLock};
 use crate::core::types::PackageInfo;
@@ -9,18 +9,18 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-pub struct FileDatabase {
+pub struct Database {
     database_path: PathBuf,
-    index: PackageIndex,
+    index: Index,
     file_map: HashMap<PathBuf, String>,
 }
 
-impl FileDatabase {
+impl Database {
     pub fn new(database_path: PathBuf) -> Result<Self> {
         ensure_directory(&database_path)?;
         ensure_directory(&database_path.join("packages"))?;
 
-        let index = PackageIndex::load(database_path.join("index.toml"))?;
+        let index = Index::load(database_path.join("index.toml"))?;
         let file_map = {
             let file_map_path = database_path.join("file_map.toml");
             if file_map_path.exists() {
@@ -38,10 +38,10 @@ impl FileDatabase {
     }
 }
 
-impl Database for FileDatabase {
+impl PackageDatabase for Database {
     fn add_package(&mut self, package_info: &PackageInfo) -> Result<()> {
         let lock_path = self.database_path.join("database.lock");
-        let _lock = ExclusiveLock::acquire(&lock_path).map_err(|_| Error::LockError)?;
+        let _lock = ExclusiveLock::acquire(&lock_path).map_err(|_| DatabaseError::LockError)?;
 
         let package_path_dir = self.database_path.join("packages").join(&package_info.name);
         ensure_directory(&package_path_dir)?;
@@ -71,7 +71,7 @@ impl Database for FileDatabase {
         }
 
         let lock_path = self.database_path.join("database.lock");
-        let _lock = ExclusiveLock::acquire(&lock_path).map_err(|_| Error::LockError)?;
+        let _lock = ExclusiveLock::acquire(&lock_path).map_err(|_| DatabaseError::LockError)?;
 
         self.index.remove(package_id);
         self.index.save()?;
@@ -86,7 +86,7 @@ impl Database for FileDatabase {
 
     fn get_package(&self, package_id: &str) -> Result<Option<PackageInfo>> {
         let lock_path = self.database_path.join("database.lock");
-        let _lock = SharedLock::acquire(&lock_path).map_err(|_| Error::LockError)?;
+        let _lock = SharedLock::acquire(&lock_path).map_err(|_| DatabaseError::LockError)?;
 
         let metadata_path = self
             .database_path
@@ -105,7 +105,7 @@ impl Database for FileDatabase {
 
     fn list_all_packages(&self) -> Result<Vec<PackageInfo>> {
         let lock_path = self.database_path.join("database.lock");
-        let _lock = SharedLock::acquire(&lock_path).map_err(|_| Error::LockError)?;
+        let _lock = SharedLock::acquire(&lock_path).map_err(|_| DatabaseError::LockError)?;
 
         let packages = self.index.list_all().into_iter().cloned().collect();
         Ok(packages)
@@ -113,7 +113,7 @@ impl Database for FileDatabase {
 
     fn register_file(&mut self, package_id: &str, file_path: &Path) -> Result<()> {
         let lock_path = self.database_path.join("database.lock");
-        let _lock = ExclusiveLock::acquire(&lock_path).map_err(|_| Error::LockError)?;
+        let _lock = ExclusiveLock::acquire(&lock_path).map_err(|_| DatabaseError::LockError)?;
 
         self.file_map
             .insert(file_path.to_path_buf(), package_id.to_string());
@@ -134,7 +134,7 @@ impl Database for FileDatabase {
 
     fn unregister_file(&mut self, file_path: &Path) -> Result<()> {
         let lock_path = self.database_path.join("database.lock");
-        let _lock = ExclusiveLock::acquire(&lock_path).map_err(|_| Error::LockError)?;
+        let _lock = ExclusiveLock::acquire(&lock_path).map_err(|_| DatabaseError::LockError)?;
 
         if let Some(package_name) = self.file_map.remove(file_path).clone() {
             write_toml(&self.database_path.join("file_map.toml"), &self.file_map)?;
@@ -161,7 +161,7 @@ impl Database for FileDatabase {
 
     fn get_files(&self, package_id: &str) -> Result<Vec<PathBuf>> {
         let lock_path = self.database_path.join("database.lock");
-        let _lock = SharedLock::acquire(&lock_path).map_err(|_| Error::LockError)?;
+        let _lock = SharedLock::acquire(&lock_path).map_err(|_| DatabaseError::LockError)?;
 
         let package_dir = self.database_path.join("packages").join(package_id);
         if !package_dir.exists() {
@@ -199,7 +199,7 @@ mod tests {
     #[test]
     fn add_and_get_package_from_database() {
         let dir = tempdir().unwrap();
-        let mut db = FileDatabase::new(dir.path().to_path_buf()).unwrap();
+        let mut db = Database::new(dir.path().to_path_buf()).unwrap();
         let package = make_package();
 
         db.add_package(&package).unwrap();
@@ -211,7 +211,7 @@ mod tests {
     #[test]
     fn remove_package_from_databse() {
         let dir = tempdir().unwrap();
-        let mut db = FileDatabase::new(dir.path().to_path_buf()).unwrap();
+        let mut db = Database::new(dir.path().to_path_buf()).unwrap();
         let package = make_package();
 
         db.add_package(&package).unwrap();
@@ -224,7 +224,7 @@ mod tests {
     #[test]
     fn list_all_packages_from_database() {
         let dir = tempdir().unwrap();
-        let mut db = FileDatabase::new(dir.path().to_path_buf()).unwrap();
+        let mut db = Database::new(dir.path().to_path_buf()).unwrap();
 
         db.add_package(&make_package()).unwrap();
 
@@ -236,7 +236,7 @@ mod tests {
     #[test]
     fn register_and_get_files_from_package() {
         let dir = tempdir().unwrap();
-        let mut db = FileDatabase::new(dir.path().to_path_buf()).unwrap();
+        let mut db = Database::new(dir.path().to_path_buf()).unwrap();
         let package = make_package();
 
         db.add_package(&package).unwrap();
@@ -250,7 +250,7 @@ mod tests {
     #[test]
     fn unregister_file_from_package() {
         let dir = tempdir().unwrap();
-        let mut db = FileDatabase::new(dir.path().to_path_buf()).unwrap();
+        let mut db = Database::new(dir.path().to_path_buf()).unwrap();
         let package = make_package();
 
         db.add_package(&package).unwrap();
@@ -267,11 +267,11 @@ mod tests {
         let dir = tempdir().unwrap();
 
         {
-            let mut db = FileDatabase::new(dir.path().to_path_buf()).unwrap();
+            let mut db = Database::new(dir.path().to_path_buf()).unwrap();
             db.add_package(&make_package()).unwrap();
         }
 
-        let db = FileDatabase::new(dir.path().to_path_buf()).unwrap();
+        let db = Database::new(dir.path().to_path_buf()).unwrap();
         let result = db.get_package("firefox").unwrap();
         assert!(result.is_some());
     }

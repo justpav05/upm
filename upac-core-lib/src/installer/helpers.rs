@@ -1,15 +1,15 @@
-use super::events::InstallEvent;
+use super::InstallEvent;
 use super::Result;
 
 use crate::core::backend::ExtractedPackage;
 use crate::core::helpers::set_permissions;
 use crate::core::types::PackageDiff;
 
-use crate::database::database::FileDatabase;
-use crate::database::Database;
+use crate::database::database::Database;
+use crate::database::PackageDatabase;
 
-use crate::backup::implement::OStreeManager;
-use crate::backup::OSTreeRepo;
+use crate::backup::manager::OStreeRepo;
+use crate::backup::PackageRepo;
 
 use std::fs;
 use std::path::Path;
@@ -21,7 +21,7 @@ pub(crate) fn stage_files(
     package_dir: &Path,
     root_dir: &Path,
     event_tx: &Sender<InstallEvent>,
-    database: &mut Box<dyn Database>,
+    database: &mut Box<dyn PackageDatabase>,
 ) -> Result<()> {
 	let total_count_of_files = extracted.files.len();
 
@@ -57,8 +57,8 @@ pub(crate) fn stage_files(
 }
 
 pub(crate) fn commit_installation(
-    ostree: &OStreeManager,
-    database: &FileDatabase,
+    ostree: &OStreeRepo,
+    database: &Database,
     package_name: &str,
     root_dir: &Path,
 ) -> Result<String> {

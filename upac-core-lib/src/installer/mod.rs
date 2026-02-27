@@ -1,21 +1,12 @@
-use crate::database::database::FileDatabase;
-use crate::installer::installer::InstallerManager;
-use crate::installer::events::InstallEvent;
-
 use crate::core::backend::ExtractedPackage;
 
-use crate::database::Database;
 use crate::database;
 
-use crate::backup::implement::OStreeManager;
 use crate::backup::errors::OStreeError;
 
 use std::path::{Path, PathBuf};
-use std::sync::mpsc::Sender;
 
-pub mod implement;
 pub mod installer;
-pub mod events;
 mod helpers;
 
 pub type Result<T> = std::result::Result<T, InstallerError>;
@@ -24,7 +15,7 @@ pub type Result<T> = std::result::Result<T, InstallerError>;
 pub enum InstallerError {
     IoError(std::io::Error),
     PathNotFoundError(std::io::Error),
-    DatabaseError(database::Error),
+    DatabaseError(database::DatabaseError),
     OStreeError(String),
 }
 
@@ -34,8 +25,8 @@ impl From<std::io::Error> for InstallerError {
     }
 }
 
-impl From<database::Error> for InstallerError {
-    fn from(err: database::Error) -> Self {
+impl From<database::DatabaseError> for InstallerError {
+    fn from(err: database::DatabaseError) -> Self {
         InstallerError::DatabaseError(err)
     }
 }
@@ -72,9 +63,24 @@ impl From<OStreeError> for InstallerError {
     }
 }
 
+#[derive(Debug, Clone)]
+pub enum InstallEvent {
+    InstallStarted  { package: String, total_files: usize },
+    FileInstalled   { path: PathBuf, current: usize, total: usize },
+    CommitCreated   { commit_hash: String },
+    InstallFinished { package: String },
 
-pub trait Installer {
-	fn new(database: Box<dyn Database>, file_database: FileDatabase, root_dir: PathBuf, package_dir: PathBuf, temp_dir: PathBuf, ostree: OStreeManager, event_tx: Sender<InstallEvent>) -> InstallerManager;
+    RemoveStarted   { package: String },
+    FileRemoved     { path: PathBuf },
+    RemoveFinished  { package: String },
+
+    Failed          { package: String, reason: String },
+}
+
+pub trait Install {
+	fn install_package(&mut self, extracted: &ExtractedPackage, ostree_backup: bool) -> Result<()>;
+
+	fn remove_package(&mut self, package_name: &str, ostree_backup: bool) -> Result<()>;
 
     fn install_packages(&mut self, packages: Vec<&ExtractedPackage>, ostree_backup: bool) -> Result<()>;
 

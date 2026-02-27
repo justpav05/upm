@@ -5,14 +5,14 @@ use toml::{ser, de};
 use std::io;
 use std::path::{Path, PathBuf};
 
-pub type Result<T> = std::result::Result<T, Error>;
+pub type Result<T> = std::result::Result<T, DatabaseError>;
 
 pub mod database;
 pub mod index;
 mod helpers;
 
 #[derive(Debug)]
-pub enum Error {
+pub enum DatabaseError {
     IoError(std::io::Error),
     TomlError(String),
     NotFound,
@@ -20,31 +20,31 @@ pub enum Error {
     PathError(PathBuf),
 }
 
-impl From<io::Error> for Error {
+impl From<io::Error> for DatabaseError {
     fn from(err: io::Error) -> Self {
-        Error::IoError(err)
+        DatabaseError::IoError(err)
     }
 }
 
-impl From<ser::Error> for Error {
+impl From<ser::Error> for DatabaseError {
     fn from(err: ser::Error) -> Self {
-        Error::TomlError(err.to_string())
+        DatabaseError::TomlError(err.to_string())
     }
 }
 
-impl From<de::Error> for Error {
+impl From<de::Error> for DatabaseError {
     fn from(err: de::Error) -> Self {
-        Error::TomlError(err.to_string())
+        DatabaseError::TomlError(err.to_string())
     }
 }
 
-impl ToString for Error {
+impl ToString for DatabaseError {
     fn to_string(&self) -> String {
         format!("{:?}", self)
     }
 }
 
-pub trait Database: Send + Sync {
+pub trait PackageDatabase: Send + Sync {
     fn add_package(&mut self, package: &PackageInfo) -> Result<()>;
 
     fn remove_package(&mut self, package_id: &str) -> Result<()>;
@@ -60,7 +60,7 @@ pub trait Database: Send + Sync {
     fn get_files(&self, package_id: &str) -> Result<Vec<PathBuf>>;
 }
 
-pub trait Index {
+pub trait Search {
     fn load(index_path: PathBuf) -> Result<Self>
     where
         Self: Sized;

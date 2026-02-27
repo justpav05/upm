@@ -1,4 +1,4 @@
-use super::{Error, Result};
+use super::{DatabaseError, Result};
 
 use toml::{from_str, to_string_pretty};
 
@@ -26,9 +26,9 @@ pub(crate) fn ensure_directory(path: &Path) -> Result<()> {
         if path.is_dir() {
             Ok(())
         } else {
-            Err(Error::PathError(path.to_path_buf()))
+            Err(DatabaseError::PathError(path.to_path_buf()))
         }
     } else {
-        fs::create_dir_all(path).map_err(Error::from)
+        fs::create_dir_all(path).map_err(DatabaseError::from)
     }
 }

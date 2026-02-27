@@ -1,8 +1,8 @@
 use super::errors::{OStreeError, Result};
 
 use crate::core::types::PackageDiff;
-use crate::database::database::{FileDatabase};
-use crate::database::Database;
+use crate::database::database::{Database};
+use crate::database::PackageDatabase;
 
 use ostree::{MutableTree, Repo, RepoFile, RepoCheckoutMode, RepoCheckoutOverwriteMode};
 use ostree::prelude::{FileExt, Cast};
@@ -45,7 +45,7 @@ pub(crate) fn split_path<'a>(path: &'a Path) -> Result<(Vec<&'a OsStr>, &'a OsSt
     Ok((parent_components, file_name))
 }
 
-pub(crate) fn collect_files(database: &FileDatabase) -> Result<Vec<PathBuf>> {
+pub(crate) fn collect_files(database: &Database) -> Result<Vec<PathBuf>> {
     let packages = database.list_all_packages()?;
     let mut files = Vec::new();
     for package in &packages {

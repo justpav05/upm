@@ -1,5 +1,5 @@
 use super::helpers::{read_toml, write_toml};
-use super::{Error, Index, Result};
+use super::{DatabaseError, Search, Result};
 
 use crate::core::types::PackageInfo;
 
@@ -9,12 +9,12 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 #[derive(Debug, Default, Serialize, Deserialize)]
-pub struct PackageIndex {
+pub struct Index {
     index_path: PathBuf,
     packages: HashMap<String, PackageInfo>,
 }
 
-impl PackageIndex {
+impl Index {
     fn rebuild(packages_dir: &Path) -> Result<Self> {
         let mut packages = HashMap::default();
         let index_path = packages_dir
@@ -30,7 +30,7 @@ impl PackageIndex {
                 }
             }
         } else {
-            return Err(Error::NotFound);
+            return Err(DatabaseError::NotFound);
         }
 
         Ok(Self {
@@ -40,7 +40,7 @@ impl PackageIndex {
     }
 }
 
-impl Index for PackageIndex {
+impl Search for Index {
     fn load(index_path: PathBuf) -> Result<Self> {
         let packages = if index_path.exists() {
             read_toml(&index_path)?
@@ -97,7 +97,7 @@ mod tests {
     #[test]
     fn insert_and_get_index() {
         let dir = tempdir().unwrap();
-        let mut index = PackageIndex::load(dir.path().join("index.toml")).unwrap();
+        let mut index = Index::load(dir.path().join("index.toml")).unwrap();
 
         index.insert("firefox", "120.0", "deb");
 
@@ -109,7 +109,7 @@ mod tests {
     #[test]
     fn remove_from_index() {
         let dir = tempdir().unwrap();
-        let mut index = PackageIndex::load(dir.path().join("index.toml")).unwrap();
+        let mut index = Index::load(dir.path().join("index.toml")).unwrap();
 
         index.insert("firefox", "120.0", "deb");
         index.remove("firefox");
@@ -122,18 +122,18 @@ mod tests {
         let dir = tempdir().unwrap();
         let path = dir.path().join("index.toml");
 
-        let mut index = PackageIndex::load(path.clone()).unwrap();
+        let mut index = Index::load(path.clone()).unwrap();
         index.insert("firefox", "120.0", "deb");
         index.save().unwrap();
 
-        let reloaded = PackageIndex::load(path).unwrap();
+        let reloaded = Index::load(path).unwrap();
         assert!(reloaded.get("firefox").is_some());
     }
 
     #[test]
     fn search_in_index() {
         let dir = tempdir().unwrap();
-        let mut index = PackageIndex::load(dir.path().join("index.toml")).unwrap();
+        let mut index = Index::load(dir.path().join("index.toml")).unwrap();
 
         index.insert("firefox", "120.0", "deb");
         index.insert("vlc", "3.0", "deb");

@@ -38,14 +38,14 @@ impl From<ostree::glib::Error> for OStreeError {
     }
 }
 
-impl From<database::Error> for OStreeError {
-    fn from(err: database::Error) -> Self {
+impl From<database::DatabaseError> for OStreeError {
+    fn from(err: database::DatabaseError) -> Self {
         match err {
-            database::Error::IoError(e) => OStreeError::IoError(e),
-            database::Error::TomlError(s) => OStreeError::OSTreeCommitFailed(s),
-            database::Error::NotFound => OStreeError::OSTreeCommitFailed("Not found".to_string()),
-            database::Error::LockError => OStreeError::OSTreeCommitFailed("Lock error".to_string()),
-            database::Error::PathError(p) => OStreeError::RepoPathError(p),
+            database::DatabaseError::IoError(err) => OStreeError::IoError(err),
+            database::DatabaseError::TomlError(string) => OStreeError::OSTreeCommitFailed(string),
+            database::DatabaseError::NotFound => OStreeError::OSTreeCommitFailed("Not found".to_string()),
+            database::DatabaseError::LockError => OStreeError::OSTreeCommitFailed("Lock error".to_string()),
+            database::DatabaseError::PathError(path_buf) => OStreeError::RepoPathError(path_buf),
         }
     }
 }
