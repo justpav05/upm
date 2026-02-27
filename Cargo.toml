@@ -1,5 +1,5 @@
 [workspace]
-members = ["upac-core"]
+members = ["upac-core-lib"]
 resolver = "2"
 
 [workspace.package]
