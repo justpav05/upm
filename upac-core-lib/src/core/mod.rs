@@ -4,7 +4,7 @@ use crate::core::lock::Result;
 use std::path::Path;
 
 // Mods
-pub mod permitions;
+pub mod permission;
 pub mod backend;
 pub mod lock;
 pub mod types;
