@@ -1,12 +1,16 @@
+// Imports
 use crate::{PackageInfo, DatabaseError};
 
 use std::path::PathBuf;
 
+// Mods
 pub mod index;
 mod toml;
 
+// Implementations for Index Result<T, DatabaseError>
 pub type Result<T> = std::result::Result<T, DatabaseError>;
 
+// Implementations for Index
 pub trait PackageIndex {
     fn load(index_path: PathBuf) -> Result<Self> where Self: Sized;
 

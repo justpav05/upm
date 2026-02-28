@@ -1,3 +1,4 @@
+// Imports
 use crate::core::types::PackageInfo;
 
 use toml::{ser, de};
@@ -5,9 +6,11 @@ use toml::{ser, de};
 use std::io;
 use std::path::{Path, PathBuf};
 
+// Mods
 pub mod database;
-mod help;
+mod files;
 
+// Enums for DatabaseError
 #[derive(Debug)]
 pub enum DatabaseError {
     IoError(std::io::Error),
@@ -17,32 +20,38 @@ pub enum DatabaseError {
     PathError(PathBuf),
 }
 
+// Result type for DatabaseError
 pub type Result<T> = std::result::Result<T, DatabaseError>;
 
+// Implementations for converting io::Error to DatabaseError
 impl From<io::Error> for DatabaseError {
     fn from(err: io::Error) -> Self {
         DatabaseError::IoError(err)
     }
 }
 
+// Implementations for converting ser::Error to DatabaseError
 impl From<ser::Error> for DatabaseError {
     fn from(err: ser::Error) -> Self {
         DatabaseError::TomlError(err.to_string())
     }
 }
 
+// Implementations for converting de::Error to DatabaseError
 impl From<de::Error> for DatabaseError {
     fn from(err: de::Error) -> Self {
         DatabaseError::TomlError(err.to_string())
     }
 }
 
+// Implementations for converting DatabaseError to String
 impl ToString for DatabaseError {
     fn to_string(&self) -> String {
         format!("{:?}", self)
     }
 }
 
+// Trait for package registry operations
 pub trait PackageRegistry {
     fn add_package(&mut self, package: &PackageInfo) -> Result<()>;
 
@@ -54,6 +63,7 @@ pub trait PackageRegistry {
 
 }
 
+// Trait for file registry operations
 pub trait FileRegistry {
     fn register_file(&mut self, package_id: &str, file_path: &Path) -> Result<()>;
 

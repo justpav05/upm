@@ -1,6 +1,6 @@
 use super::{InstallEvent, InstallerError, Install, Result};
 
-use crate::{PackageRegistry, PackageRepo, PackageDiff, PackageInfo, ExtractedPackage};
+use crate::{PackageRegistry, PackageInfo, ExtractedPackage};
 use crate::core::permission::set_permissions;
 use crate::database::FileRegistry;
 

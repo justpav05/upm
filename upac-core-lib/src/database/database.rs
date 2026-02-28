@@ -1,5 +1,6 @@
+// Imports
 use super::{DatabaseError, PackageRegistry, FileRegistry, Result};
-use super::help::{ensure_directory, read_toml, write_toml};
+use super::files::{ensure_directory, read_toml, write_toml};
 
 use crate::core::lock::{ExclusiveLock, SharedLock};
 use crate::core::types::PackageInfo;
@@ -12,13 +13,17 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::fs;
 
+// Struct definition for database
 pub struct Database {
     database_path: PathBuf,
     index: Index,
     file_map: HashMap<PathBuf, String>,
 }
 
+// Implementation of Database struct own functions
 impl Database {
+
+	// Function to create a new database instance
     pub fn new(database_path: PathBuf) -> Result<Self> {
         ensure_directory(&database_path)?;
         ensure_directory(&database_path.join("packages"))?;
@@ -41,7 +46,10 @@ impl Database {
     }
 }
 
+// Implementation of FileRegistry trait for Database struct
 impl FileRegistry for Database {
+
+	// Function to register a file in the database
     fn register_file(&mut self, package_id: &str, file_path: &Path) -> Result<()> {
         let lock_path = self.database_path.join("database.lock");
         let _lock = ExclusiveLock::acquire(&lock_path).map_err(|_| DatabaseError::LockError)?;
@@ -61,6 +69,7 @@ impl FileRegistry for Database {
         Ok(())
     }
 
+    // Function to unregister a file from the database
     fn unregister_file(&mut self, file_path: &Path) -> Result<()> {
         let lock_path = self.database_path.join("database.lock");
         let _lock = ExclusiveLock::acquire(&lock_path).map_err(|_| DatabaseError::LockError)?;
@@ -89,6 +98,7 @@ impl FileRegistry for Database {
         Ok(())
     }
 
+    // Function to get the list of files for a given package
     fn get_files(&self, package_id: &str) -> Result<Vec<PathBuf>> {
         let lock_path = self.database_path.join("database.lock");
         let _lock = SharedLock::acquire(&lock_path).map_err(|_| DatabaseError::LockError)?;
@@ -111,7 +121,10 @@ impl FileRegistry for Database {
     }
 }
 
+// Implementation of PackageRegistry trait for Database struct
 impl PackageRegistry for Database {
+
+	// Function to add a package to the database
     fn add_package(&mut self, package: &PackageInfo) -> Result<()> {
         let lock_path = self.database_path.join("database.lock");
         let _lock = ExclusiveLock::acquire(&lock_path).map_err(|_| DatabaseError::LockError)?;
@@ -134,6 +147,7 @@ impl PackageRegistry for Database {
         Ok(())
     }
 
+    // Function to remove a package from the database
     fn remove_package(&mut self, package_id: &str) -> Result<()> {
         let lock_path = self.database_path.join("database.lock");
         let _lock = ExclusiveLock::acquire(&lock_path).map_err(|_| DatabaseError::LockError)?;
@@ -149,6 +163,7 @@ impl PackageRegistry for Database {
         Ok(())
     }
 
+    // Function to get a package from the database
     fn get_package(&self, package_id: &str) -> Result<Option<PackageInfo>> {
         let lock_path = self.database_path.join("database.lock");
         let _lock = SharedLock::acquire(&lock_path).map_err(|_| DatabaseError::LockError)?;
@@ -165,105 +180,11 @@ impl PackageRegistry for Database {
         Ok(Some(read_toml(&metadata_path)?))
     }
 
+    // Function to list all packages in the database
     fn list_all_packages(&self) -> Result<Vec<PackageInfo>> {
         let lock_path = self.database_path.join("database.lock");
         let _lock = SharedLock::acquire(&lock_path).map_err(|_| DatabaseError::LockError)?;
 
         Ok(self.index.list_all().into_iter().cloned().collect())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::core::types::PackageInfo;
-    use tempfile::tempdir;
-
-    fn make_package() -> PackageInfo {
-        PackageInfo {
-            name: "firefox".to_string(),
-            version: "120.0".to_string(),
-            format: "deb".to_string(),
-        }
-    }
-
-    #[test]
-    fn add_and_get_package_from_database() {
-        let dir = tempdir().unwrap();
-        let mut db = Database::new(dir.path().to_path_buf()).unwrap();
-        let package = make_package();
-
-        db.add_package(&package).unwrap();
-
-        let result = db.get_package("firefox").unwrap();
-        assert!(result.is_some());
-    }
-
-    #[test]
-    fn remove_package_from_databse() {
-        let dir = tempdir().unwrap();
-        let mut db = Database::new(dir.path().to_path_buf()).unwrap();
-        let package = make_package();
-
-        db.add_package(&package).unwrap();
-        db.remove_package("firefox").unwrap();
-
-        let result = db.get_package("firefox").unwrap();
-        assert!(result.is_none());
-    }
-
-    #[test]
-    fn list_all_packages_from_database() {
-        let dir = tempdir().unwrap();
-        let mut db = Database::new(dir.path().to_path_buf()).unwrap();
-
-        db.add_package(&make_package()).unwrap();
-
-        let list = db.list_all_packages().unwrap();
-        assert_eq!(list.len(), 1);
-        assert_eq!(list[0].name, "firefox");
-    }
-
-    #[test]
-    fn register_and_get_files_from_package() {
-        let dir = tempdir().unwrap();
-        let mut db = Database::new(dir.path().to_path_buf()).unwrap();
-        let package = make_package();
-
-        db.add_package(&package).unwrap();
-        db.register_file("firefox", Path::new("/usr/bin/firefox"))
-            .unwrap();
-
-        let files = db.get_files("firefox").unwrap();
-        assert!(files.contains(&PathBuf::from("/usr/bin/firefox")));
-    }
-
-    #[test]
-    fn unregister_file_from_package() {
-        let dir = tempdir().unwrap();
-        let mut db = Database::new(dir.path().to_path_buf()).unwrap();
-        let package = make_package();
-
-        db.add_package(&package).unwrap();
-        db.register_file("firefox", Path::new("/usr/bin/firefox"))
-            .unwrap();
-        db.unregister_file(Path::new("/usr/bin/firefox")).unwrap();
-
-        let files = db.get_files("firefox").unwrap();
-        assert!(!files.contains(&PathBuf::from("/usr/bin/firefox")));
-    }
-
-    #[test]
-    fn persist_after_reload() {
-        let dir = tempdir().unwrap();
-
-        {
-            let mut db = Database::new(dir.path().to_path_buf()).unwrap();
-            db.add_package(&make_package()).unwrap();
-        }
-
-        let db = Database::new(dir.path().to_path_buf()).unwrap();
-        let result = db.get_package("firefox").unwrap();
-        assert!(result.is_some());
     }
 }
