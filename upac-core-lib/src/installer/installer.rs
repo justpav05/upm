@@ -1,3 +1,4 @@
+// Imports
 use super::{InstallEvent, InstallerError, Install, Result};
 
 use crate::{PackageRegistry, PackageInfo, ExtractedPackage};
@@ -8,6 +9,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::Sender;
 
+// Implementations for Installer
 pub struct Installer {
     registry: Box<dyn PackageRegistry>,
     file_registry: Box<dyn FileRegistry>,
@@ -18,7 +20,10 @@ pub struct Installer {
     event_tx: Sender<InstallEvent>,
 }
 
+// Implementations for Installer for his own funchions
 impl Installer {
+
+	// Get new item for Installer
     pub fn new(
         registry: Box<dyn PackageRegistry>,
         file_registry: Box<dyn FileRegistry>,
@@ -39,10 +44,12 @@ impl Installer {
         }
     }
 
+    // Send event to event_tx
     fn emit(&self, event: InstallEvent) {
         let _ = self.event_tx.send(event);
     }
 
+    // Send error event to event_tx
     fn fail(&self, package: &str, err: InstallerError) -> InstallerError {
         self.emit(InstallEvent::Failed {
             package: package.to_string(),
@@ -50,22 +57,12 @@ impl Installer {
         });
         err
     }
-
-    // fn commit(&self, diff: &PackageDiff) -> Result<()> {
-    //     if let Some(ostree) = &self.ostree {
-    //         let packages = self.registry.list_all_packages()?;
-    //         let mut files = Vec::new();
-    //         for package in &packages {
-    //             files.extend(self.file_registry.get_files(&package.name)?);
-    //         }
-    //         let commit_hash = ostree.commit(files, diff)?;
-    //         self.emit(InstallEvent::CommitCreated { commit_hash });
-    //     }
-    //     Ok(())
-    // }
 }
 
+// Implement Install trait for Installer
 impl Install for Installer {
+
+	// Implement Install trait for Installer
 	fn install(&mut self, package: &ExtractedPackage) -> Result<()> {
     	let name = &package.name;
 
@@ -113,6 +110,7 @@ impl Install for Installer {
         Ok(())
 	}
 
+	// Implement Install trait for Installer
 	fn remove(&mut self, package_id: &str) -> Result<()> {
     	self.emit(InstallEvent::RemoveStarted { package: package_id.to_string() });
 
@@ -140,19 +138,23 @@ impl Install for Installer {
     	Ok(())
 	}
 
+	// Implement Install trait for Installer
     fn list_files(&self, package_id: &str) -> Result<Vec<PathBuf>> {
         Ok(self.file_registry.get_files(package_id)?)
     }
 
+    // Implement Install trait for Installer
     fn list_packages(&self) -> Result<Vec<PackageInfo>> {
         Ok(self.registry.list_all_packages()?)
     }
 
+    // Implement Install trait for Installer
     fn add_file(&mut self, package_id: &str, file_path: &Path) -> Result<()> {
         self.file_registry.register_file(package_id, file_path)?;
         Ok(())
     }
 
+    // Implement Install trait for Installer
     fn remove_file(&mut self, file_path: &Path) -> Result<()> {
         if !self.ostree_enabled && file_path.exists() {
             fs::remove_file(file_path)?;

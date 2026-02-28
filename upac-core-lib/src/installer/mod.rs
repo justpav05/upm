@@ -1,11 +1,14 @@
+// Imports
 use crate::{PackageInfo, ExtractedPackage};
 use crate::backup::OStreeError;
 use crate::database;
 
 use std::path::{Path, PathBuf};
 
+// Mods
 pub mod installer;
 
+// Enums for Installer Errors
 #[derive(Debug)]
 pub enum InstallerError {
     IoError(std::io::Error),
@@ -14,39 +17,45 @@ pub enum InstallerError {
     OStreeError(String),
 }
 
+// Implement Install trait for Installer
 pub type Result<T> = std::result::Result<T, InstallerError>;
 
+// Implement for std::io::Error to InstallerError
 impl From<std::io::Error> for InstallerError {
     fn from(err: std::io::Error) -> Self {
         InstallerError::IoError(err)
     }
 }
 
+// Implement for database::DatabaseError to InstallerError
 impl From<database::DatabaseError> for InstallerError {
     fn from(err: database::DatabaseError) -> Self {
         InstallerError::DatabaseError(err)
     }
 }
 
+// Implement for nix::Error to InstallerError
 impl From<nix::Error> for InstallerError {
     fn from(err: nix::Error) -> Self {
         InstallerError::IoError(std::io::Error::other(err))
     }
 }
 
+// Implement for std::sync::PoisonError to InstallerError
 impl<T> From<std::sync::PoisonError<T>> for InstallerError {
     fn from(err: std::sync::PoisonError<T>) -> Self {
         InstallerError::IoError(std::io::Error::other(err.to_string()))
     }
 }
 
+// To string implementation for Installer error
 impl ToString for InstallerError {
     fn to_string(&self) -> String {
         format!("{:?}", self)
     }
 }
 
-
+// Implement for OStreeError to InstallerError
 impl From<OStreeError> for InstallerError {
     fn from(err: OStreeError) -> Self {
         match err {
@@ -60,6 +69,7 @@ impl From<OStreeError> for InstallerError {
     }
 }
 
+// An unfinished state machine for determining the state of an installation
 #[derive(Debug, Clone)]
 pub enum InstallEvent {
     InstallStarted  { package: String, total_files: usize },
@@ -74,6 +84,7 @@ pub enum InstallEvent {
     Failed          { package: String, reason: String },
 }
 
+// Trait for the installer
 pub trait Install {
     fn install(&mut self, package: &ExtractedPackage) -> Result<()>;
 
