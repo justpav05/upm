@@ -1,4 +1,5 @@
-use super::{PackageRepo, CommitInfo, Result};
+// Imports
+use super::{PackageRepo, CommitInfo, Result, OStreeRefCommitChange};
 use super::OStreeError;
 
 use super::info::{parse_commit_description, parse_commit_package_list, parse_commit_timestamp};
@@ -17,14 +18,17 @@ use nix::unistd::{getuid, getgid};
 use std::path::{PathBuf, Path};
 use std::fs;
 
+// Structure for repository management
 pub struct OStreeRepo {
     repo_path: PathBuf,
     mode: RepoMode,
     repo: Repo,
 }
 
+// Original functions for repository operation
 impl OStreeRepo {
-	// Создание нового репозитория в директории
+
+	// Creating a new repository in a directory
 	pub fn create(repo_path: PathBuf, mode: RepoMode) -> Result<Self> {
         if repo_path.exists() && fs::read_dir(&repo_path)?.next().is_some() {
             return Err(OStreeError::RepoPathError(repo_path.clone()));
@@ -43,6 +47,7 @@ impl OStreeRepo {
         Ok(Self { repo_path, mode, repo })
     }
 
+    // Open an existing repository
     pub fn open(repo_path: PathBuf) -> Result<Self> {
         if !repo_path.exists() {
             return Err(OStreeError::NotFound(repo_path));
@@ -54,6 +59,7 @@ impl OStreeRepo {
         Ok(Self { repo_path, mode: repo.mode(), repo })
     }
 
+    // Delete the repository
     pub fn delete(self) -> Result<()> {
         fs::remove_dir_all(&self.repo_path)?;
         Ok(())
@@ -61,14 +67,17 @@ impl OStreeRepo {
 
 }
 
-
+// PackageRepo implementation for OStreeRepo
 impl PackageRepo for OStreeRepo {
+
+	// Creating a new commit and writing it to the repository
     fn commit(&self, files: Vec<PathBuf>, diff: &PackageDiff) -> Result<String> {
         let mtree = build_mtree(&self.repo, &files)?;
         let commit_hash = write_commit(&self.repo, &mtree, diff)?;
         Ok(commit_hash)
     }
 
+    // Removing a repository from a commit
     fn delete(&self, ref_name: &str) -> Result<()> {
         self.repo
             .resolve_rev(ref_name, false)
@@ -81,6 +90,7 @@ impl PackageRepo for OStreeRepo {
         Ok(())
     }
 
+    // Rolling back the state of the repository and installed programs to a specific commit
     fn rollback_to(&self, commit_hash: &str, root_dir: &Path) -> Result<()> {
         let commit_files = collect_commit_files(&self.repo, commit_hash)?;
         let disk_files = collect_disk_files(root_dir)?;
@@ -95,6 +105,7 @@ impl PackageRepo for OStreeRepo {
         Ok(())
     }
 
+    // Getting human-readable information about a commit
     fn get_commit_info(&self, commit_hash: &str) -> Result<CommitInfo> {
         let variant = self.repo
             .load_variant(ObjectType::Commit, commit_hash)
@@ -110,5 +121,27 @@ impl PackageRepo for OStreeRepo {
             package_list,
             description,
         })
+    }
+}
+
+// PackageRepo implementation for OStreeRefCommitChange
+impl OStreeRefCommitChange for OStreeRepo {
+
+	// Get commit hash for a given ref name
+	fn resolve_ref(&self, ref_name: &str) -> Result<String> {
+    	self.repo.resolve_rev(ref_name, true).map_err(|e: ostree::glib::Error| OStreeError::CommitNotFound(e.to_string()))?.ok_or_else(|| OStreeError::CommitNotFound(ref_name.to_string())).map(|s| s.to_string())
+	}
+
+	// Find a ref name for a given commit hash
+    fn find_ref(&self, commit_hash: &str) -> Result<Option<String>> {
+        let refs = self.repo.list_refs(None, None::<&Cancellable>).map_err(|err| OStreeError::OSTreeFailed(err.to_string()))?;
+
+        for (ref_name, hash) in refs {
+            if hash.to_string() == commit_hash {
+                return Ok(Some(ref_name));
+            }
+        }
+
+        Ok(None)
     }
 }

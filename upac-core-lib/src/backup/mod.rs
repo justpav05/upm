@@ -1,3 +1,4 @@
+// Imports
 use crate::PackageDiff;
 use crate::database;
 
@@ -12,6 +13,7 @@ mod rollback;
 mod commit;
 mod info;
 
+// Structure for commit information
 #[derive(Debug, Clone)]
 pub struct CommitInfo {
     pub hash: String,
@@ -20,6 +22,7 @@ pub struct CommitInfo {
     pub description: String,
 }
 
+// Enum for OStree errors
 #[derive(Debug)]
 pub enum OStreeError {
     IoError(io::Error),
@@ -30,26 +33,31 @@ pub enum OStreeError {
     OSTreeFailed(String),
 }
 
+// Type alias for Result<T, OStreeError>
 pub type Result<T> = std::result::Result<T, OStreeError>;
 
+// Implement From for io::Error to OStreeError
 impl From<io::Error> for OStreeError {
     fn from(err: io::Error) -> Self {
         OStreeError::IoError(err)
     }
 }
 
+// Implement From for nix::Error to OStreeError
 impl From<nix::Error> for OStreeError {
     fn from(err: nix::Error) -> Self {
         OStreeError::IoError(io::Error::other(err))
     }
 }
 
+// Implement From for glib::Error to OStreeError
 impl From<glib::Error> for OStreeError {
     fn from(err: glib::Error) -> Self {
         OStreeError::OSTreeCommitFailed(err.to_string())
     }
 }
 
+// Implement From for database::DatabaseError to OStreeError
 impl From<database::DatabaseError> for OStreeError {
     fn from(err: database::DatabaseError) -> Self {
         match err {
@@ -62,6 +70,7 @@ impl From<database::DatabaseError> for OStreeError {
     }
 }
 
+// Trait for commits and rollbacks
 pub trait PackageRepo {
     fn commit(&self, files: Vec<PathBuf>, diff: &PackageDiff) -> Result<String>;
 
@@ -70,4 +79,11 @@ pub trait PackageRepo {
     fn rollback_to(&self, commit_hash: &str, root_dir: &Path) -> Result<()>;
 
     fn get_commit_info(&self, commit_hash: &str) -> Result<CommitInfo>;
+}
+
+// Trait for resolving refs and finding commits
+pub trait OStreeRefCommitChange {
+    fn resolve_ref(&self, ref_name: &str) -> Result<String>;
+
+    fn find_ref(&self, commit_hash: &str) -> Result<Option<String>>;
 }

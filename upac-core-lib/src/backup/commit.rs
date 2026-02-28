@@ -1,3 +1,4 @@
+// Imports
 use super::{OStreeError, Result};
 
 use crate::core::types::PackageDiff;
@@ -9,6 +10,7 @@ use ostree::prelude::{FileExt, Cast};
 use std::path::{Path, PathBuf};
 use std::ffi::OsStr;
 
+// Function for creating a virtual tree of commit files
 pub(super) fn build_mtree(repo: &Repo, files: &[PathBuf]) -> Result<MutableTree> {
     let mtree = MutableTree::new();
     for path in files {
@@ -18,6 +20,7 @@ pub(super) fn build_mtree(repo: &Repo, files: &[PathBuf]) -> Result<MutableTree>
     Ok(mtree)
 }
 
+// The function of recording a commit with a description in the repository
 pub(super) fn write_commit(repo: &Repo, mtree: &MutableTree, diff: &PackageDiff) -> Result<String> {
 	let root_file = repo.write_mtree(mtree, None::<&Cancellable>)?;
 	let root_file: RepoFile = downcast_repo_file(root_file)?;
@@ -37,13 +40,14 @@ pub(super) fn write_commit(repo: &Repo, mtree: &MutableTree, diff: &PackageDiff)
 
     Ok(commit_hash.to_string())
 }
-//A crutch, because I don't know how to convert the type otherwise
-//Костыль, потому что по другому я не знаю, как преобразовать тип
+
+// A crutch, because I don't know how to convert the type otherwise
 fn downcast_repo_file(file: File) -> Result<RepoFile> {
     file.downcast::<RepoFile>()
         .map_err(|_| OStreeError::OSTreeFailed("Failed to cast gio::File to RepoFile".into()))
 }
 
+// File checksum calculation function
 fn checksum(repo: &Repo, file: &File) -> Result<String> {
     let stream = file.read(None::<&Cancellable>)?;
     let checksum = repo.write_content(None, &stream.upcast::<InputStream>(), 0, None::<&Cancellable>)?;
@@ -51,6 +55,7 @@ fn checksum(repo: &Repo, file: &File) -> Result<String> {
     Ok(checksum.to_string())
 }
 
+// The function of dividing a path into a vector from its parents
 fn split_path<'a>(path: &'a Path) -> Result<(Vec<&'a OsStr>, &'a OsStr)> {
     let file_name = path.file_name()
         .ok_or_else(|| OStreeError::OSTreeFailed("Path has no filename".into()))?;
@@ -68,6 +73,7 @@ fn split_path<'a>(path: &'a Path) -> Result<(Vec<&'a OsStr>, &'a OsStr)> {
     Ok((parent_components, file_name))
 }
 
+// The function of embedding a file into a virtual file tree
 fn insert_file_into_mtree(repo: &Repo, mtree: &MutableTree, path: &Path) -> Result<()> {
     let (parent_os, file_name_os) = split_path(path)?;
 
@@ -89,6 +95,7 @@ fn insert_file_into_mtree(repo: &Repo, mtree: &MutableTree, path: &Path) -> Resu
     Ok(())
 }
 
+// Getting a human-readable package diff format for creating a commit description
 fn parse_diff_metadata(repo: &Repo, commit_hash: &str, diff: &PackageDiff) -> Result<()> {
     let all_packages: Vec<&str> = diff.added.iter()
         .chain(diff.updated.iter())

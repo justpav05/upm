@@ -1,3 +1,4 @@
+// Imports
 use super::{OStreeError, Result};
 
 use ostree::{Repo, RepoFile, RepoCheckoutMode, RepoCheckoutOverwriteMode};
@@ -9,6 +10,7 @@ use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::fs;
 
+// Get files from commit
 pub(super) fn collect_commit_files(repo: &Repo, commit_hash: &str) -> Result<HashSet<PathBuf>> {
     let (root, _) = repo.read_commit(commit_hash, None::<&Cancellable>)?;
     let mut files = HashSet::new();
@@ -16,13 +18,15 @@ pub(super) fn collect_commit_files(repo: &Repo, commit_hash: &str) -> Result<Has
     Ok(files)
 }
 
+// Get files from disk
 pub(super) fn collect_disk_files(root_dir: &Path) -> Result<HashSet<PathBuf>> {
     let mut files = HashSet::new();
     collect_dir_files(root_dir, Path::new(""), &mut files)?;
     Ok(files)
 }
 
-pub(crate) fn checkout_to_root(repo: &Repo,
+// Checkout commit to root directory
+pub(super) fn checkout_to_root(repo: &Repo,
     commit_hash: &str,
     root_dir: &Path,
 ) -> Result<()> {
@@ -41,13 +45,14 @@ pub(crate) fn checkout_to_root(repo: &Repo,
 
     Ok(())
 }
+
 //A crutch, because I don't know how to convert the type otherwise
-//Костыль, потому что по другому я не знаю, как преобразовать тип
 fn downcast_repo_file(file: File) -> Result<RepoFile> {
     file.downcast::<RepoFile>()
         .map_err(|_| OStreeError::OSTreeFailed("Failed to cast gio::File to RepoFile".into()))
 }
 
+// Read commit root file
 fn read_commit_root(repo: &Repo, commit_hash: &str) -> Result<RepoFile> {
     let (root_file, _) = repo
         .read_commit(commit_hash, None::<&Cancellable>)?;
@@ -55,6 +60,7 @@ fn read_commit_root(repo: &Repo, commit_hash: &str) -> Result<RepoFile> {
     downcast_repo_file(root_file)
 }
 
+// Get file info from RepoFile
 fn repo_file_info(file: &RepoFile) -> Result<FileInfo> {
     let file_info = file.query_info(
         "standard::*,unix::*",
@@ -65,6 +71,7 @@ fn repo_file_info(file: &RepoFile) -> Result<FileInfo> {
     Ok(file_info)
 }
 
+// Collect files from a directory
 fn collect_dir_files(dir: &Path, relative: &Path, files: &mut HashSet<PathBuf>) -> Result<()> {
     for entry in fs::read_dir(dir)? {
         let entry = entry?;
@@ -81,6 +88,7 @@ fn collect_dir_files(dir: &Path, relative: &Path, files: &mut HashSet<PathBuf>) 
     Ok(())
 }
 
+// Collect files from a virtual file mtree
 fn collect_tree_files(dir: &File, current_path: &Path, files: &mut HashSet<PathBuf>) -> Result<()> {
     let enumerator = dir.enumerate_children(
         "standard::*",
