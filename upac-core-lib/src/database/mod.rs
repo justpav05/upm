@@ -5,11 +5,8 @@ use toml::{ser, de};
 use std::io;
 use std::path::{Path, PathBuf};
 
-pub type Result<T> = std::result::Result<T, DatabaseError>;
-
 pub mod database;
-pub mod index;
-mod helpers;
+mod help;
 
 #[derive(Debug)]
 pub enum DatabaseError {
@@ -19,6 +16,8 @@ pub enum DatabaseError {
     LockError,
     PathError(PathBuf),
 }
+
+pub type Result<T> = std::result::Result<T, DatabaseError>;
 
 impl From<io::Error> for DatabaseError {
     fn from(err: io::Error) -> Self {
@@ -44,7 +43,7 @@ impl ToString for DatabaseError {
     }
 }
 
-pub trait PackageDatabase: Send + Sync {
+pub trait PackageRegistry {
     fn add_package(&mut self, package: &PackageInfo) -> Result<()>;
 
     fn remove_package(&mut self, package_id: &str) -> Result<()>;
@@ -53,27 +52,12 @@ pub trait PackageDatabase: Send + Sync {
 
     fn list_all_packages(&self) -> Result<Vec<PackageInfo>>;
 
+}
+
+pub trait FileRegistry {
     fn register_file(&mut self, package_id: &str, file_path: &Path) -> Result<()>;
 
     fn unregister_file(&mut self, file_path: &Path) -> Result<()>;
 
     fn get_files(&self, package_id: &str) -> Result<Vec<PathBuf>>;
-}
-
-pub trait Search {
-    fn load(index_path: PathBuf) -> Result<Self>
-    where
-        Self: Sized;
-
-    fn save(&self) -> Result<()>;
-
-    fn insert(&mut self, name: &str, version: &str, format: &str);
-
-    fn remove(&mut self, package_info: &str);
-
-    fn get(&self, package_info: &str) -> Option<&PackageInfo>;
-
-    fn search(&self, query: &str) -> Vec<&PackageInfo>;
-
-    fn list_all(&self) -> Vec<&PackageInfo>;
 }

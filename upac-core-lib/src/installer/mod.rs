@@ -1,15 +1,11 @@
-use crate::core::backend::ExtractedPackage;
-
+use crate::{PackageInfo, ExtractedPackage};
+use crate::backup::OStreeError;
 use crate::database;
-
-use crate::backup::errors::OStreeError;
 
 use std::path::{Path, PathBuf};
 
 pub mod installer;
 mod helpers;
-
-pub type Result<T> = std::result::Result<T, InstallerError>;
 
 #[derive(Debug)]
 pub enum InstallerError {
@@ -18,6 +14,8 @@ pub enum InstallerError {
     DatabaseError(database::DatabaseError),
     OStreeError(String),
 }
+
+pub type Result<T> = std::result::Result<T, InstallerError>;
 
 impl From<std::io::Error> for InstallerError {
     fn from(err: std::io::Error) -> Self {
@@ -78,29 +76,15 @@ pub enum InstallEvent {
 }
 
 pub trait Install {
-    fn install_package(&mut self, package: &ExtractedPackage, ostree_backup: bool) -> Result<()>;
+    fn install(&mut self, package: &ExtractedPackage) -> Result<()>;
 
-    fn remove_package(&mut self, package: &str, ostree_backup: bool) -> Result<()>;
+    fn remove(&mut self, package_id: &str) -> Result<()>;
 
-    fn list_package_files(&self, package: &str) -> Result<Option<Vec<PathBuf>>>;
+    fn list_files(&self, package_id: &str) -> Result<Vec<PathBuf>>;
 
-    fn add_file_to_package(&mut self, package: &str, path: &Path) -> Result<()>;
+    fn list_packages(&self) -> Result<Vec<PackageInfo>>;
 
-    fn remove_file_from_package(&mut self, path: &Path) -> Result<()>;
+    fn add_file(&mut self, package_id: &str, file_path: &Path) -> Result<()>;
 
-    fn install_packages<'a>(
-        &mut self,
-        packages: impl IntoIterator<Item = &'a ExtractedPackage>,
-        ostree_backup: bool,
-    ) -> Result<()> {
-        packages.into_iter().try_for_each(|package| self.install_package(package, ostree_backup))
-    }
-
-    fn remove_packages<'a>(
-        &mut self,
-        packages: impl IntoIterator<Item = &'a str>,
-        ostree_backup: bool,
-    ) -> Result<()> {
-        packages.into_iter().try_for_each(|package| self.remove_package(package, ostree_backup))
-    }
+    fn remove_file(&mut self, file_path: &Path) -> Result<()>;
 }

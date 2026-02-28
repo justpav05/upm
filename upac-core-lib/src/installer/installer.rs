@@ -1,170 +1,175 @@
-use ostree::ffi::OstreeRemote;
+use super::{InstallEvent, InstallerError, Install, Result};
 
-use super::helpers::{stage_files, commit_installation};
-use super::InstallEvent;
-use super::InstallerError;
-use super::Install;
-use super::Result;
-
-use crate::core::backend::ExtractedPackage;
-use crate::core::types::PackageDiff;
-use crate::core::types::PackageInfo;
-
-use crate::database::database::Database;
-	use crate::database::PackageDatabase;
-
-use crate::backup::manager::OStreeRepo;
-use crate::backup::PackageRepo;
+use crate::{PackageRegistry, PackageRepo, PackageDiff, PackageInfo, ExtractedPackage};
+use crate::core::helpers::set_permissions;
+use crate::database::FileRegistry;
 
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::Sender;
 
 pub struct Installer {
-    pub(crate) database: Box<dyn PackageDatabase>,
-    pub(crate) file_database: Database,
-    pub(crate) root_dir: PathBuf,
-    pub(crate) package_dir: PathBuf,
-    pub(crate) temp_dir: PathBuf,
-    pub(crate) ostree: OStreeRepo,
-    pub(crate) event_tx: Sender<InstallEvent>,
+    registry: Box<dyn PackageRegistry>,
+    file_registry: Box<dyn FileRegistry>,
+    ostree: Option<Box<dyn PackageRepo>>,
+    root_dir: PathBuf,
+    package_dir: PathBuf,
+    temp_dir: PathBuf,
+    event_tx: Sender<InstallEvent>,
 }
 
 impl Installer {
-	fn new(
-       database: Box<dyn PackageDatabase>,
-       file_database: Database,
-       root_dir: PathBuf,
-       temp_dir: PathBuf,
-       package_dir: PathBuf,
-       ostree: OStreeRepo,
-       event_tx: Sender<InstallEvent>
-   ) -> Self {
-       Self { database, file_database, root_dir, temp_dir, package_dir, ostree, event_tx }
-   }
-
-	fn emit(&self, event: InstallEvent) {
-    	let _ = self.event_tx.send(event);
+    pub fn new(
+        registry: Box<dyn PackageRegistry>,
+        file_registry: Box<dyn FileRegistry>,
+        ostree: Option<Box<dyn PackageRepo>>,
+        root_dir: PathBuf,
+        package_dir: PathBuf,
+        temp_dir: PathBuf,
+        event_tx: Sender<InstallEvent>,
+    ) -> Self {
+        Self {
+            registry,
+            file_registry,
+            ostree,
+            root_dir,
+            package_dir,
+            temp_dir,
+            event_tx,
+        }
     }
 
-    pub(crate) fn fail(&self, package: &str, err: InstallerError) -> InstallerError {
-           self.emit(InstallEvent::Failed {
-               package: package.to_string(),
-               reason: err.to_string(),
-           });
-           err
-       }
+    fn emit(&self, event: InstallEvent) {
+        let _ = self.event_tx.send(event);
+    }
+
+    fn fail(&self, package: &str, err: InstallerError) -> InstallerError {
+        self.emit(InstallEvent::Failed {
+            package: package.to_string(),
+            reason: err.to_string(),
+        });
+        err
+    }
+
+    fn commit(&self, diff: &PackageDiff) -> Result<()> {
+        if let Some(ostree) = &self.ostree {
+            let packages = self.registry.list_all_packages()?;
+            let mut files = Vec::new();
+            for package in &packages {
+                files.extend(self.file_registry.get_files(&package.name)?);
+            }
+            let commit_hash = ostree.commit(files, diff)?;
+            self.emit(InstallEvent::CommitCreated { commit_hash });
+        }
+        Ok(())
+    }
 }
 
 impl Install for Installer {
-	fn install_package(&mut self, extracted: &ExtractedPackage, ostree_backup: bool) -> Result<()> {
-   		let name = &extracted.name;
+    fn install(&mut self, package: &ExtractedPackage) -> Result<()> {
+        let name = &package.name;
 
         self.emit(InstallEvent::InstallStarted {
             package: name.clone(),
-            total_files: extracted.files.len(),
+            total_files: package.files.len(),
         });
 
         let package_info = PackageInfo {
-        	name: extracted.name.clone(),
-         	version: extracted.version.clone(),
-           	format: extracted.format.clone(),
+            name: package.name.clone(),
+            version: package.version.clone(),
+            format: package.format.clone(),
         };
 
-        self.database.add_package(&package_info).map_err(|e| self.fail(name, e.into()))?;
+        self.registry.add_package(&package_info)
+            .map_err(|e| self.fail(name, e.into()))?;
 
-        stage_files(
-        	extracted,
-            &self.temp_dir,
-            &self.package_dir,
-            &self.root_dir,
-            &self.event_tx,
-            &mut self.database)
-        .map_err(|err| self.fail(name, err))?;
+        let total = package.files.len();
+        for (index, file_entry) in package.files.iter().enumerate() {
+            let source_path = self.temp_dir.join(&file_entry.relative_path);
+            let package_path = self.package_dir
+                .join(name)
+                .join(&file_entry.relative_path);
 
-        if self.temp_dir.exists() {
-        	fs::remove_dir_all(&self.temp_dir).map_err(|err| self.fail(name, err.into()))?;
-            fs::create_dir_all(&self.temp_dir).map_err(|err| self.fail(name, err.into()))?;
+            if let Some(parent) = package_path.parent() {
+                fs::create_dir_all(parent).map_err(|e| self.fail(name, e.into()))?;
+            }
+
+            fs::copy(&source_path, &package_path).map_err(|e| self.fail(name, e.into()))?;
+
+            set_permissions(&package_path, file_entry.permissions, file_entry.owner, file_entry.group).map_err(|e| self.fail(name, e.into()))?;
+
+            let destination = self.root_dir.join(&file_entry.relative_path);
+
+            self.file_registry.register_file(name, &destination)
+                .map_err(|e| self.fail(name, e.into()))?;
+
+            self.emit(InstallEvent::FileInstalled {
+                path: destination,
+                current: index + 1,
+                total,
+            });
         }
 
-        if ostree_backup {
-       		let commit_hash = commit_installation(&self.ostree, &self.file_database, name, &self.root_dir)
-             .map_err(|err| self.fail(name, err))?;
+        fs::remove_dir_all(&self.temp_dir).map_err(|e| self.fail(name, e.into()))?;
+        fs::create_dir_all(&self.temp_dir).map_err(|e| self.fail(name, e.into()))?;
 
-         	self.emit(InstallEvent::CommitCreated { commit_hash: commit_hash.clone() });
-        }
+        let diff = PackageDiff {
+            added: vec![name.clone()],
+            removed: vec![],
+            updated: vec![],
+        };
+        self.commit(&diff).map_err(|e| self.fail(name, e))?;
 
-        self.emit(InstallEvent::InstallFinished { package: extracted.name.clone() });
+        self.emit(InstallEvent::InstallFinished { package: name.clone() });
 
         Ok(())
     }
 
-    fn remove_package(&mut self, package_name: &str, ostree_backup: bool) -> Result<()> {
-   		self.emit(InstallEvent::RemoveStarted { package: package_name.to_string() });
+    fn remove(&mut self, package_id: &str) -> Result<()> {
+        self.emit(InstallEvent::RemoveStarted { package: package_id.to_string() });
 
-    	let files = self.database.get_files(package_name).map_err(|err| self.fail(package_name, err.into()))?;
+        let files = self.file_registry.get_files(package_id).map_err(|e| self.fail(package_id, e.into()))?;
 
-     	for file_path in files {
-     		if file_path.exists() {
-            	fs::remove_file(&file_path).map_err(|err| self.fail(package_name, err.into()))?;
-         	}
-
-         	self.database.unregister_file(&file_path).map_err(|err| self.fail(package_name, err.into()))?;
-
-          	self.emit(InstallEvent::FileRemoved { path: file_path });
-      	}
-
-       self.database.remove_package(package_name).map_err(|err| self.fail(package_name, err.into()))?;
-
-        if ostree_backup {
-            let diff = PackageDiff {
-                added: vec![],
-                removed: vec![package_name.to_string()],
-                updated: vec![],
-            };
-
-            let commit_hash = self.ostree.create_commit(&self.file_database, &diff, &self.root_dir).map_err(|err| self.fail(package_name, err.into()))?;
-
-            self.emit(InstallEvent::CommitCreated { commit_hash });
+        for file_path in files {
+            if file_path.exists() {
+                fs::remove_file(&file_path).map_err(|e| self.fail(package_id, e.into()))?;
+            }
+            self.file_registry.unregister_file(&file_path).map_err(|e| self.fail(package_id, e.into()))?;
+            self.emit(InstallEvent::FileRemoved { path: file_path });
         }
+
+        self.registry.remove_package(package_id).map_err(|e| self.fail(package_id, e.into()))?;
+
+        let diff = PackageDiff {
+            added: vec![],
+            removed: vec![package_id.to_string()],
+            updated: vec![],
+        };
+        self.commit(&diff).map_err(|e| self.fail(package_id, e))?;
+
+        self.emit(InstallEvent::RemoveFinished { package: package_id.to_string() });
 
         Ok(())
     }
 
-    fn install_packages<'a>(&mut self, extracted_packages: impl IntoIterator<Item = &'a ExtractedPackage>, ostree_backup: bool) -> Result<()> {
-        for extracted in extracted_packages {
-            self.install_package(extracted, ostree_backup)?;
-        }
+    fn list_files(&self, package_id: &str) -> Result<Vec<PathBuf>> {
+        Ok(self.file_registry.get_files(package_id)?)
+    }
+
+    fn list_packages(&self) -> Result<Vec<PackageInfo>> {
+        Ok(self.registry.list_all_packages()?)
+    }
+
+    fn add_file(&mut self, package_id: &str, file_path: &Path) -> Result<()> {
+        self.file_registry.register_file(package_id, file_path)?;
         Ok(())
     }
 
-    fn remove_packages<'a>(&mut self, packages_name: impl IntoIterator<Item = &'a str>, ostree_backup: bool) -> Result<()> {
-        for package_name in packages_name {
-            self.remove_package(package_name, ostree_backup)?;
-        }
-        Ok(())
-    }
-
-    fn list_package_files(&self, package_id: &str) -> Result<Option<Vec<PathBuf>>> {
-        let files = self.database.get_files(package_id)?;
-
-        if !files.is_empty() {
-            Ok(Some(files))
-        } else {
-            Ok(None)
-        }
-    }
-
-    fn add_file_to_package(&mut self, package_id: &str, file_path: &Path) -> Result<()> {
-        self.database.register_file(package_id, file_path)?;
-        Ok(())
-    }
-
-    fn remove_file_from_package(&mut self, file_path: &Path) -> Result<()> {
+    fn remove_file(&mut self, file_path: &Path) -> Result<()> {
         if file_path.exists() {
             fs::remove_file(file_path)?;
         }
-        self.database.unregister_file(file_path)?;
+        self.file_registry.unregister_file(file_path)?;
         Ok(())
     }
 }

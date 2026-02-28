@@ -4,7 +4,7 @@ use std::num::NonZeroU64;
 pub mod helpers;
 pub mod backend;
 pub mod lock;
-pub mod types;#[allow(dead_code)]
+pub mod types;
 #[allow(dead_code)]
 trait UpacPkg {
     fn install(&self, package: &str);

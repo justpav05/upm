@@ -1,13 +1,13 @@
-use super::helpers::{ensure_directory, read_toml, write_toml};
-use super::{DatabaseError, Search, PackageDatabase, Result};
-use super::index::Index;
+use super::{DatabaseError, PackageRegistry, FileRegistry, Result};
+use super::help::{ensure_directory, read_toml, write_toml};
 
 use crate::core::lock::{ExclusiveLock, SharedLock};
 use crate::core::types::PackageInfo;
+use crate::index::index::Index;
 
 use std::collections::HashMap;
-use std::fs;
 use std::path::{Path, PathBuf};
+use std::fs;
 
 pub struct Database {
     database_path: PathBuf,
@@ -38,38 +38,94 @@ impl Database {
     }
 }
 
-impl PackageDatabase for Database {
-    fn add_package(&mut self, package_info: &PackageInfo) -> Result<()> {
+impl FileRegistry for Database {
+    fn register_file(&mut self, package_id: &str, file_path: &Path) -> Result<()> {
         let lock_path = self.database_path.join("database.lock");
         let _lock = ExclusiveLock::acquire(&lock_path).map_err(|_| DatabaseError::LockError)?;
 
-        let package_path_dir = self.database_path.join("packages").join(&package_info.name);
-        ensure_directory(&package_path_dir)?;
+        self.file_map.insert(file_path.to_path_buf(), package_id.to_string());
+        write_toml(&self.database_path.join("file_map.toml"), &self.file_map)?;
 
-        let metadata_path = package_path_dir.join("metadata.toml");
-        write_toml(&metadata_path, package_info)?;
+        let files_list = self.database_path
+            .join("packages")
+            .join(package_id)
+            .join("files.list");
 
-        let files_path = package_path_dir.join("files.list");
-        fs::write(&files_path, "")?;
-        // TODO: Изменить работу так, чтобы сохранял правильно список файлов
+        let mut content = fs::read_to_string(&files_list).unwrap_or_default();
+        content.push_str(&format!("{}\n", file_path.display()));
+        fs::write(&files_list, content)?;
 
-        self.index.insert(
-            &package_info.name,
-            &package_info.version,
-            &package_info.format,
-        );
+        Ok(())
+    }
+
+    fn unregister_file(&mut self, file_path: &Path) -> Result<()> {
+        let lock_path = self.database_path.join("database.lock");
+        let _lock = ExclusiveLock::acquire(&lock_path).map_err(|_| DatabaseError::LockError)?;
+
+        let Some(package_name) = self.file_map.remove(file_path) else {
+            return Ok(());
+        };
+
+        write_toml(&self.database_path.join("file_map.toml"), &self.file_map)?;
+
+        let files_list = self.database_path
+            .join("packages")
+            .join(&package_name)
+            .join("files.list");
+
+        if files_list.exists() {
+            let content = fs::read_to_string(&files_list)?;
+            let new_content: String = content
+                .lines()
+                .filter(|line| Path::new(line.trim()) != file_path)
+                .map(|line| format!("{}\n", line))
+                .collect();
+            fs::write(&files_list, new_content)?;
+        }
+
+        Ok(())
+    }
+
+    fn get_files(&self, package_id: &str) -> Result<Vec<PathBuf>> {
+        let lock_path = self.database_path.join("database.lock");
+        let _lock = SharedLock::acquire(&lock_path).map_err(|_| DatabaseError::LockError)?;
+
+        let files_list_path = self.database_path
+            .join("packages")
+            .join(package_id)
+            .join("files.list");
+
+        if !files_list_path.exists() {
+            return Ok(Vec::new());
+        }
+
+        let files_list = fs::read_to_string(&files_list_path)?;
+        Ok(files_list
+            .lines()
+            .filter(|line| !line.trim().is_empty())
+            .map(|line| PathBuf::from(line.trim()))
+            .collect())
+    }
+}
+
+impl PackageRegistry for Database {
+    fn add_package(&mut self, package: &PackageInfo) -> Result<()> {
+        let lock_path = self.database_path.join("database.lock");
+        let _lock = ExclusiveLock::acquire(&lock_path).map_err(|_| DatabaseError::LockError)?;
+
+        let package_dir = self.database_path.join("packages").join(&package.name);
+        ensure_directory(&package_dir)?;
+
+        let metadata_path = package_dir.join("metadata.toml");
+        write_toml(&metadata_path, package)?;
+
+        self.index.insert(&package.name, &package.version, &package.format);
         self.index.save()?;
 
         Ok(())
     }
 
     fn remove_package(&mut self, package_id: &str) -> Result<()> {
-        let files = self.get_files(package_id)?;
-
-        for file in files {
-            self.unregister_file(&file)?;
-        }
-
         let lock_path = self.database_path.join("database.lock");
         let _lock = ExclusiveLock::acquire(&lock_path).map_err(|_| DatabaseError::LockError)?;
 
@@ -88,8 +144,7 @@ impl PackageDatabase for Database {
         let lock_path = self.database_path.join("database.lock");
         let _lock = SharedLock::acquire(&lock_path).map_err(|_| DatabaseError::LockError)?;
 
-        let metadata_path = self
-            .database_path
+        let metadata_path = self.database_path
             .join("packages")
             .join(package_id)
             .join("metadata.toml");
@@ -98,87 +153,14 @@ impl PackageDatabase for Database {
             return Ok(None);
         }
 
-        let package = read_toml(&metadata_path)?;
-
-        Ok(Some(package))
+        Ok(Some(read_toml(&metadata_path)?))
     }
 
     fn list_all_packages(&self) -> Result<Vec<PackageInfo>> {
         let lock_path = self.database_path.join("database.lock");
         let _lock = SharedLock::acquire(&lock_path).map_err(|_| DatabaseError::LockError)?;
 
-        let packages = self.index.list_all().into_iter().cloned().collect();
-        Ok(packages)
-    }
-
-    fn register_file(&mut self, package_id: &str, file_path: &Path) -> Result<()> {
-        let lock_path = self.database_path.join("database.lock");
-        let _lock = ExclusiveLock::acquire(&lock_path).map_err(|_| DatabaseError::LockError)?;
-
-        self.file_map
-            .insert(file_path.to_path_buf(), package_id.to_string());
-        write_toml(&self.database_path.join("file_map.toml"), &self.file_map)?;
-
-        let files_list = self
-            .database_path
-            .join("packages")
-            .join(package_id)
-            .join("files.list");
-        let mut content = fs::read_to_string(&files_list).unwrap_or_default();
-
-        content.push_str(&format!("{}\n", file_path.display()));
-        fs::write(&files_list, content)?;
-
-        Ok(())
-    }
-
-    fn unregister_file(&mut self, file_path: &Path) -> Result<()> {
-        let lock_path = self.database_path.join("database.lock");
-        let _lock = ExclusiveLock::acquire(&lock_path).map_err(|_| DatabaseError::LockError)?;
-
-        if let Some(package_name) = self.file_map.remove(file_path).clone() {
-            write_toml(&self.database_path.join("file_map.toml"), &self.file_map)?;
-
-            let files_list = self
-                .database_path
-                .join("packages")
-                .join(&package_name)
-                .join("files.list");
-
-            if files_list.exists() {
-                let content = fs::read_to_string(&files_list)?;
-                let new_content: String = content
-                    .lines()
-                    .filter(|line| Path::new(line.trim()) != file_path)
-                    .map(|line| format!("{}\n", line))
-                    .collect();
-                fs::write(&files_list, new_content)?;
-            }
-        }
-
-        Ok(())
-    }
-
-    fn get_files(&self, package_id: &str) -> Result<Vec<PathBuf>> {
-        let lock_path = self.database_path.join("database.lock");
-        let _lock = SharedLock::acquire(&lock_path).map_err(|_| DatabaseError::LockError)?;
-
-        let package_dir = self.database_path.join("packages").join(package_id);
-        if !package_dir.exists() {
-            return Ok(Vec::new());
-        }
-
-        let files_list_path = package_dir.join("files.list");
-        if !files_list_path.exists() {
-            return Ok(Vec::new());
-        }
-
-        let files_list = fs::read_to_string(&files_list_path)?;
-        Ok(files_list
-            .lines()
-            .filter(|line| !line.trim().is_empty())
-            .map(|line| PathBuf::from(line.trim()))
-            .collect())
+        Ok(self.index.list_all().into_iter().cloned().collect())
     }
 }
 

@@ -22,9 +22,9 @@ impl From<std::io::Error> for BackendError {
 impl Display for BackendError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            BackendError::Io(e) => write!(f, "IO error: {e}"),
-            BackendError::InvalidPackage(s) => write!(f, "Invalid package: {s}"),
-            BackendError::UnsupportedFormat(s) => write!(f, "Unsupported format: {s}"),
+            BackendError::Io(err) => write!(f, "IO error: {err}"),
+            BackendError::InvalidPackage(string) => write!(f, "Invalid package: {string}"),
+            BackendError::UnsupportedFormat(string) => write!(f, "Unsupported format: {string}"),
         }
     }
 }
@@ -47,8 +47,12 @@ pub struct FileEntry {
 
 pub trait Backend: Send + Sync {
     fn name(&self) -> &str;
+
     fn supported_formats(&self) -> Vec<&str>;
+
     fn detect(&self, path: &Path) -> bool;
+
     fn extract(&self, path: &Path, temp_dir: &Path) -> Result<ExtractedPackage>;
+
     fn read_metadata(&self, path: &Path) -> Result<PackageMetadata>;
 }
