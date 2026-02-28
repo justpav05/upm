@@ -8,7 +8,7 @@ mod toml;
 pub type Result<T> = std::result::Result<T, DatabaseError>;
 
 pub trait PackageIndex {
-    fn load(index_path: PathBuf) -> Result<Self>; //where Self: Sized
+    fn load(index_path: PathBuf) -> Result<Self> where Self: Sized;
 
     fn save(&self) -> Result<()>;
 

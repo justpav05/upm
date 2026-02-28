@@ -4,6 +4,7 @@ use super::help::{ensure_directory, read_toml, write_toml};
 use crate::core::lock::{ExclusiveLock, SharedLock};
 use crate::core::types::PackageInfo;
 use crate::index::index::Index;
+use crate::index::PackageIndex;
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -119,7 +120,13 @@ impl PackageRegistry for Database {
         let metadata_path = package_dir.join("metadata.toml");
         write_toml(&metadata_path, package)?;
 
-        self.index.insert(&package.name, &package.version, &package.format);
+        let package_info = PackageInfo {
+            name: package.name.clone(),
+            version: package.version.clone(),
+            format: package.format.clone(),
+        };
+
+        self.index.insert(&package_info);
         self.index.save()?;
 
         Ok(())

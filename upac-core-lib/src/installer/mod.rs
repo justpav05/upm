@@ -5,7 +5,6 @@ use crate::database;
 use std::path::{Path, PathBuf};
 
 pub mod installer;
-mod helpers;
 
 #[derive(Debug)]
 pub enum InstallerError {
