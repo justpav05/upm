@@ -1,11 +1,14 @@
+// Imports
 use super::types::PackageMetadata;
 
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use std::path::{Path, PathBuf};
 
+// Alias for Result<T, BackendError>
 pub type Result<T> = std::result::Result<T, BackendError>;
 
+// Backend error enum
 #[derive(Debug)]
 pub enum BackendError {
     Io(std::io::Error),
@@ -13,12 +16,14 @@ pub enum BackendError {
     UnsupportedFormat(String),
 }
 
+// Convert std::io::Error to BackendError
 impl From<std::io::Error> for BackendError {
     fn from(e: std::io::Error) -> Self {
         BackendError::Io(e)
     }
 }
 
+// Display implementation for BackendError
 impl Display for BackendError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -29,12 +34,15 @@ impl Display for BackendError {
     }
 }
 
+// Structure for working with an unpacked package
 pub struct ExtractedPackage {
     pub name: String,
     pub version: String,
     pub format: String,
     pub files: Vec<FileEntry>,
 }
+
+// File entry struct for working with package files
 #[derive(Serialize, Deserialize)]
 pub struct FileEntry {
     pub relative_path: PathBuf,
@@ -45,6 +53,7 @@ pub struct FileEntry {
     pub group: u32,
 }
 
+// Trait for backend implementations
 pub trait Backend: Send + Sync {
     fn name(&self) -> &str;
 

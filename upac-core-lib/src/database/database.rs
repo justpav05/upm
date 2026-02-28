@@ -3,6 +3,8 @@ use super::help::{ensure_directory, read_toml, write_toml};
 
 use crate::core::lock::{ExclusiveLock, SharedLock};
 use crate::core::types::PackageInfo;
+use crate::core::Lockable;
+
 use crate::index::index::Index;
 use crate::index::PackageIndex;
 

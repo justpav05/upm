@@ -1,5 +1,7 @@
+// Imports
 use serde::{Deserialize, Serialize};
 
+// Types
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Package {
     pub info: PackageInfo,
@@ -24,8 +26,6 @@ pub struct Dependency {
     pub name: String,
     pub version_req: Option<String>,
 }
-// types.rs
-
 #[derive(Debug, Clone)]
 pub struct PackageDiff {
     pub added: Vec<String>,
@@ -33,6 +33,7 @@ pub struct PackageDiff {
     pub updated: Vec<String>,
 }
 
+// Translate package diff to a human-readable description
 impl PackageDiff {
     pub fn to_description(&self) -> String {
         let mut parts = Vec::new();

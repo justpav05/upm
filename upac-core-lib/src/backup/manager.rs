@@ -6,7 +6,7 @@ use super::info::{parse_commit_description, parse_commit_package_list, parse_com
 use super::rollback::{collect_commit_files, collect_disk_files, checkout_to_root};
 use super::commit::{build_mtree, write_commit};
 
-use crate::core::helpers::set_permissions;
+use crate::core::permitions::set_permissions;
 use crate::{PackageDiff};
 
 use ostree::{Repo, RepoMode, RepoPruneFlags};
