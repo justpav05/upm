@@ -77,3 +77,5 @@ pub trait FileRegistry {
 
     fn get_files(&self, package_id: &str) -> Result<Vec<PathBuf>>;
 }
+
+pub trait PackageDatabase: PackageRegistry + FileRegistry + Send + Sync {}

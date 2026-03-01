@@ -1,7 +1,7 @@
 // Imports
 use super::{InstallEvent, InstallerError, Install, Result};
 
-use crate::{PackageRegistry, PackageInfo, ExtractedPackage};
+use crate::{PackageDatabase, PackageInfo, ExtractedPackage};
 use crate::core::permission::set_permissions;
 use crate::database::FileRegistry;
 
@@ -11,8 +11,7 @@ use std::sync::mpsc::Sender;
 
 // Implementations for Installer
 pub struct Installer {
-    registry: Box<dyn PackageRegistry>,
-    file_registry: Box<dyn FileRegistry>,
+    registry: Box<dyn PackageDatabase>,
     ostree_enabled: bool,
     root_dir: PathBuf,
     package_dir: PathBuf,
@@ -25,8 +24,7 @@ impl Installer {
 
 	// Get new item for Installer
     pub fn new(
-        registry: Box<dyn PackageRegistry>,
-        file_registry: Box<dyn FileRegistry>,
+        registry: Box<dyn PackageDatabase>,
         ostree_enabled: bool,
         root_dir: PathBuf,
         package_dir: PathBuf,
@@ -35,7 +33,6 @@ impl Installer {
     ) -> Self {
         Self {
             registry,
-            file_registry,
             ostree_enabled,
             root_dir,
             package_dir,
@@ -96,7 +93,7 @@ impl Install for Installer {
                 set_permissions(&package_path, file_entry.permissions, file_entry.owner, file_entry.group).map_err(|err| self.fail(name, err.into()))?;
           	}
 
-           self.file_registry.register_file(name, &destination).map_err(|e| self.fail(name, e.into()))?;
+           self.registry.register_file(name, &destination).map_err(|e| self.fail(name, e.into()))?;
 
            self.emit(InstallEvent::FileInstalled {
            		path: destination,
@@ -114,7 +111,7 @@ impl Install for Installer {
 	fn remove(&mut self, package_id: &str) -> Result<()> {
     	self.emit(InstallEvent::RemoveStarted { package: package_id.to_string() });
 
-     	let files = self.file_registry.get_files(package_id).map_err(|err| self.fail(package_id, err.into()))?;
+     	let files = self.registry.get_files(package_id).map_err(|err| self.fail(package_id, err.into()))?;
 
       	for file_path in &files {
         	if !self.ostree_enabled {
@@ -126,7 +123,7 @@ impl Install for Installer {
           	// Если ostree включён — он сам уберёт файлы через rollback
         	// Мы только снимаем регистрацию из базы данных
 
-        	self.file_registry.unregister_file(file_path).map_err(|err| self.fail(package_id, err.into()))?;
+        	self.registry.unregister_file(file_path).map_err(|err| self.fail(package_id, err.into()))?;
 
         	self.emit(InstallEvent::FileRemoved { path: file_path.clone() });
    		 }
@@ -140,7 +137,7 @@ impl Install for Installer {
 
 	// Implement Install trait for Installer
     fn list_files(&self, package_id: &str) -> Result<Vec<PathBuf>> {
-        Ok(self.file_registry.get_files(package_id)?)
+        Ok(self.registry.get_files(package_id)?)
     }
 
     // Implement Install trait for Installer
@@ -150,7 +147,7 @@ impl Install for Installer {
 
     // Implement Install trait for Installer
     fn add_file(&mut self, package_id: &str, file_path: &Path) -> Result<()> {
-        self.file_registry.register_file(package_id, file_path)?;
+        self.registry.register_file(package_id, file_path)?;
         Ok(())
     }
 
@@ -159,7 +156,7 @@ impl Install for Installer {
         if !self.ostree_enabled && file_path.exists() {
             fs::remove_file(file_path)?;
         }
-        self.file_registry.unregister_file(file_path)?;
+        self.registry.unregister_file(file_path)?;
         Ok(())
     }
 }

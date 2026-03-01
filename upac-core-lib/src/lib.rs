@@ -19,7 +19,7 @@ pub use installer::InstallEvent;
 pub use installer::installer::Installer;
 
 // Public API for the database
-pub use database::{PackageRegistry, DatabaseError};
+pub use database::{PackageRegistry, PackageDatabase, DatabaseError};
 pub use database::database::Database;
 
 // Public API for OSTree
