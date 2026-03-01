@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 const DEFAULT_CONFIG_PATH: &str = "/etc/upac/config.toml";
 
 // Config for Upac
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UpacConfig {
     pub database_path: PathBuf,
     pub package_dir:   PathBuf,
@@ -19,7 +19,7 @@ pub struct UpacConfig {
 }
 
 // Config for OStree
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OStreeConfig {
     pub enabled:   bool,
     pub repo_path: PathBuf,
