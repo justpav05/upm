@@ -13,7 +13,7 @@ use std::path::PathBuf;
 pub type Result<T> = std::result::Result<T, DatabaseError>;
 
 // Index struct for package indexing
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Index {
     index_path: PathBuf,
     packages: HashMap<String, PackageInfo>,

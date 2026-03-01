@@ -14,6 +14,7 @@ use std::path::{Path, PathBuf};
 use std::fs;
 
 // Struct definition for database
+#[derive(Debug, Clone)]
 pub struct Database {
     database_path: PathBuf,
     index: Index,
