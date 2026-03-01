@@ -44,10 +44,16 @@ impl From<de::Error> for DatabaseError {
     }
 }
 
-// Implementations for converting DatabaseError to String
-impl ToString for DatabaseError {
-    fn to_string(&self) -> String {
-        format!("{:?}", self)
+// Implementations for converting DatabaseError to human-readable string
+impl std::fmt::Display for DatabaseError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::IoError(e) => write!(f, "IO error: {}", e),
+            Self::TomlError(e) => write!(f, "TOML error: {}", e),
+            Self::NotFound => write!(f, "Not found"),
+            Self::LockError => write!(f, "Lock error"),
+            Self::PathError(p) => write!(f, "Path error: {}", p.display()),
+        }
     }
 }
 

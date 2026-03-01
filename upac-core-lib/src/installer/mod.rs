@@ -48,12 +48,18 @@ impl<T> From<std::sync::PoisonError<T>> for InstallerError {
     }
 }
 
-// To string implementation for Installer error
-impl ToString for InstallerError {
-    fn to_string(&self) -> String {
-        format!("{:?}", self)
+// Implement for display InstallerError as human-readable string
+impl std::fmt::Display for InstallerError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::IoError(err) => write!(f, "IO error: {}", err),
+            Self::PathNotFoundError(err) => write!(f, "Path not found: {}", err),
+            Self::DatabaseError(err) => write!(f, "Database error: {}", err),
+            Self::OStreeError(err) => write!(f, "OStree error: {}", err),
+        }
     }
 }
+
 
 // Implement for OStreeError to InstallerError
 impl From<OStreeError> for InstallerError {
