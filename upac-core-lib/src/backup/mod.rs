@@ -4,10 +4,13 @@ use crate::database;
 
 use ostree::glib;
 
-use std::io;
+use std::fmt::{Display, Formatter};
 use std::path::{PathBuf, Path};
 use std::time::SystemTime;
+use std::fmt;
+use std::io;
 
+// Mods
 pub mod manager;
 mod rollback;
 mod commit;
@@ -69,6 +72,20 @@ impl From<database::DatabaseError> for OStreeError {
         }
     }
 }
+
+impl Display for OStreeError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            OStreeError::IoError(err) => write!(f, "IO error: {}", err),
+            OStreeError::NotFound(path) => write!(f, "Not found: {}", path.display()),
+            OStreeError::RepoPathError(path) => write!(f, "Repo path error: {}", path.display()),
+            OStreeError::CommitNotFound(commit) => write!(f, "Commit not found: {}", commit),
+            OStreeError::OSTreeCommitFailed(msg) => write!(f, "OSTree commit failed: {}", msg),
+            OStreeError::OSTreeFailed(msg) => write!(f, "OSTree error: {}", msg),
+        }
+    }
+}
+
 
 // Trait for commits and rollbacks
 pub trait PackageRepo {
