@@ -1,5 +1,5 @@
 // Imports
-use super::{DatabaseError, PackageRegistry, FileRegistry, Result};
+use super::{DatabaseError, PackageRegistry, PackageDatabase, FileRegistry, Result};
 use super::files::{ensure_directory, read_toml, write_toml};
 
 use crate::core::lock::{ExclusiveLock, SharedLock};
@@ -189,3 +189,5 @@ impl PackageRegistry for Database {
         Ok(self.index.list_all().into_iter().cloned().collect())
     }
 }
+
+impl PackageDatabase for Database {}
