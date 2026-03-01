@@ -2,11 +2,16 @@
 mod installer;
 mod database;
 mod backup;
+mod config;
 mod index;
 mod core;
 
 // Public API for backends
 pub use core::backend::{Backend, BackendError, ExtractedPackage, FileEntry};
+
+// Public API for config
+pub use config::{Config, ConfigError};
+pub use config::config::{OStreeConfig, UpacConfig};
 
 // Public API for the installer
 pub use installer::Install;
