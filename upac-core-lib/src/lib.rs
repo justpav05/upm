@@ -14,8 +14,7 @@ pub use config::{Config, ConfigError};
 pub use config::config::{OStreeConfig, UpacConfig};
 
 // Public API for the installer
-pub use installer::Install;
-pub use installer::InstallEvent;
+pub use installer::{Install, InstallEvent};
 pub use installer::installer::Installer;
 
 // Public API for the database
@@ -23,7 +22,7 @@ pub use database::{PackageRegistry, PackageDatabase, DatabaseError};
 pub use database::database::Database;
 
 // Public API for OSTree
-pub use backup::{PackageRepo, CommitInfo, OStreeRefCommitChange};
+pub use backup::{PackageRepo, OStreeError, CommitInfo, OStreeRefCommitChange};
 pub use backup::manager::OStreeRepo;
 
 // Public types

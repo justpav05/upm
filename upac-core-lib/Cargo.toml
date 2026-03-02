@@ -7,6 +7,9 @@ repository.workspace = true
 authors.workspace = true
 rust-version.workspace = true
 
+[lib]
+crate-type = ["cdylib"]
+
 [dependencies]
 regex = "1.12.3"
 nix = { version = "0.28", features = ["fs", "user"] }
