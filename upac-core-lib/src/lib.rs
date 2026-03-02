@@ -14,7 +14,7 @@ pub use config::{Config, ConfigError};
 pub use config::config::{OStreeConfig, UpacConfig};
 
 // Public API for the installer
-pub use installer::{Install, InstallEvent};
+pub use installer::{Install, InstallEvent, InstallerError};
 pub use installer::installer::Installer;
 
 // Public API for the database
