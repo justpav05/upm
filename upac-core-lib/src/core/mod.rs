@@ -1,6 +1,12 @@
 // Imports
 use crate::core::lock::Result;
 
+use abi_stable::{
+    sabi_trait,
+    std_types::RString,
+    StableAbi,
+};
+
 use std::path::Path;
 
 // Mods
@@ -9,7 +15,9 @@ pub mod backend;
 pub mod lock;
 pub mod types;
 
-// Trait for file locking
+
+
+#[sabi_trait]
 pub trait Lockable: Sized {
-    fn acquire(path: &Path) -> Result<Self>;
+    fn acquire(path: RString) -> RResult<Self, LockError>;
 }

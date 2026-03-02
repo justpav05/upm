@@ -8,12 +8,13 @@ authors.workspace = true
 rust-version.workspace = true
 
 [lib]
-crate-type = ["cdylib"]
+crate-type = ["dylib", "rlib"]
 
 [dependencies]
-regex = "1.12.3"
 nix = { version = "0.28", features = ["fs", "user"] }
 serde = { version = "1.0", features = ["derive"] }
+abi_stable = { version = "0.11" }
 ostree = { version = "0.20" }
 tempfile = "3.8"
+regex = "1.12.3"
 toml = "0.8"

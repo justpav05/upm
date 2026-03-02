@@ -1,35 +1,40 @@
 // Imports
 use super::Lockable;
 
+use abi_stable::std_types::{RString, RBoxError};
+use abi_stable::StableAbi;
+
 use nix::fcntl::{Flock, FlockArg};
 
 use std::fs::{File, OpenOptions};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::io;
 
 // Type alias for lock Result<T, LockError>
 pub type Result<T> = std::result::Result<T, LockError>;
 
 // Error enum for lock operations
+#[derive(StableAbi)]
+#[repr(C)]
 #[derive(Debug)]
 pub enum LockError {
-    IoError(io::Error),
-    Nix(nix::Error),
-    SharedLockBusy(PathBuf),
-    ExclusiveLockBusy(PathBuf),
+    IoError(RBoxError),
+    Nix(RBoxError),
+    SharedLockBusy(RString),
+    ExclusiveLockBusy(RString),
 }
 
-// Convert io::Error to LockError
+// Convert RBoxError to LockError
 impl From<io::Error> for LockError {
     fn from(err: io::Error) -> Self {
-        LockError::IoError(err)
+        LockError::IoError(RBoxError::new(err))
     }
 }
 
-// Convert nix::errno::Errno to LockError
-impl From<(File, nix::errno::Errno)> for LockError {
-    fn from((_, err): (File, nix::errno::Errno)) -> Self {
-        LockError::Nix(err.into())
+// Convert RBoxError to LockError
+impl From<(File, nix::Error)> for LockError {
+    fn from((_, err): (File, nix::Error)) -> Self {
+        LockError::Nix(RBoxError::new(err))
     }
 }
 
@@ -45,10 +50,8 @@ impl Lockable for SharedLock {
     fn acquire(path: &Path) -> Result<Self> {
         if let Some(parent) = path.parent() {
             if !parent.exists() {
-                return Err(LockError::IoError(std::io::Error::new(
-                    std::io::ErrorKind::NotFound,
-                    format!("Directory does not exist: {}", parent.display()),
-                )));
+                return Err(LockError::IoError(RBoxError::new(io::Error::new(io::ErrorKind::NotFound,
+                format!("Directory does not exist: {}", parent.display())))));
             }
         }
         let lock_file = OpenOptions::new()
@@ -73,10 +76,9 @@ impl Lockable for ExclusiveLock {
     fn acquire(path: &Path) -> Result<Self> {
         if let Some(parent) = path.parent() {
             if !parent.exists() {
-                return Err(LockError::IoError(std::io::Error::new(
-                    std::io::ErrorKind::NotFound,
-                    format!("Directory does not exist: {}", parent.display()),
-                )));
+                return Err(LockError::IoError(RBoxError::new(io::Error::new(
+                    io::ErrorKind::NotFound,
+                    format!("Directory does not exist: {}", parent.display())))));
             }
         }
         let lock_file = OpenOptions::new()
