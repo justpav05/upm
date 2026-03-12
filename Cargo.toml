@@ -1,10 +1,24 @@
-[workspace]
-members = ["upac-core-lib"]
-resolver = "2"
-
-[workspace.package]
+[package]
+name = "upac-lib"
+version = "0.1.0"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/justpav05/upm"
 authors = ["justpav05", "afeistel"]
-rust-version = "1.83"
+rust-version = "1.93.1"
+
+[workspace]
+members = ["."]
+
+[lib]
+crate-type = ["dylib", "rlib"]
+
+[dependencies]
+nix = { version = "0.28", features = ["fs", "user"] }
+time = { version = "0.3", features = ["formatting"] }
+serde = { version = "1.0", features = ["derive"] }
+abi_stable = { version = "0.11" }
+ostree = { version = "0.20" }
+tempfile = "3.8"
+regex = "1.12.3"
+toml = "0.8"
