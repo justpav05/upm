@@ -102,19 +102,19 @@ impl Database for PackageDatabase {
      	let install_package_date = OffsetDateTime::now_utc().to_string();
 
      	let package_info = Package {
-     		name: package.name.clone(),
-     		version: package.version.clone(),
-     		format: package.format.clone(),
+     		name: package.name.to_string().clone(),
+     		version: package.version.to_string().clone(),
+     		format: package.format.to_string().clone(),
      		install_date: install_package_date,
      	};
 
-      	let file_list = FileList {
-              files: package.file_list.clone(),
-       	};
+     	let file_list = FileList {
+          files: package.file_list.iter().map(|string| PathBuf::from(string.as_str())).collect(),
+      	};
 
-     	self.packages_map.insert(package.name.clone(), package_info);
+     	self.packages_map.insert(package.name.to_string().clone(), package_info);
 
-      	let package_dir_path = self.database_path.join(PACKAGE_DIR_NAME).join(&package.name);
+      	let package_dir_path = self.database_path.join(PACKAGE_DIR_NAME).join(&package.name.to_string());
 
       	Self::ensure_directory(&package_dir_path)?;
 

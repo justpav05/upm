@@ -22,3 +22,4 @@ ostree = { version = "0.20" }
 tempfile = "3.8"
 regex = "1.12.3"
 toml = "0.8"
+stabby = "72.1.1"

@@ -1,7 +1,11 @@
-use crate::{errors::InstallerResult, types::ExtractedPackage};
+use crate::{errors::{InstallerResult, InstallerStabbyResult}, types::ExtractedPackage};
+
+use stabby::str::Str as StabStr;
 
 mod installer;
 
+#[repr(u8)]
+#[stabby::stabby]
 #[derive(PartialEq, Eq)]
 pub enum InstallerState {
 	Idle,
@@ -14,7 +18,8 @@ pub enum InstallerState {
 	Failed,
 }
 
+#[stabby::stabby]
 pub trait Installer {
-	fn install(&mut self, package: ExtractedPackage) -> InstallerResult<()>;
-	fn remove(&mut self, package: &str) -> InstallerResult<()>;
+    extern "C" fn install(&mut self, package: ExtractedPackage) -> InstallerStabbyResult<()>;
+    extern "C" fn remove(&mut self, package: StabStr) -> InstallerStabbyResult<()>;
 }
