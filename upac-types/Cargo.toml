@@ -1,0 +1,11 @@
+[package]
+name = "upac-types"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+stabby = { workspace = true }
+serde = { workspace = true }
+toml = "0.8"
+ostree = { version = "0.20", features = ["v2022_6"] }
+nix = { version = "0.28", features = ["fs", "user"] }

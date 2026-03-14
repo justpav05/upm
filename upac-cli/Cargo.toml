@@ -1,0 +1,13 @@
+[package]
+name = "upac-cli"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "upac"
+path = "src/main.rs"
+
+[dependencies]
+upac-types = { path = "../upac-types" }
+upac-lib = { path = "../upac-lib" }
+stabby = { workspace = true }

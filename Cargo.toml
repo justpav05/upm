@@ -1,30 +1,11 @@
-[package]
-name = "upac-lib"
-version = "0.1.0"
-edition = "2021"
-license = "MIT"
-repository = "https://github.com/justpav05/upm"
-authors = ["justpav05", "afeistel"]
-rust-version = "1.93.1"
-
 [workspace]
-members = ["."]
+members = [
+    "upac-types",
+    "upac-lib",
+    "upac-cli",
+]
+resolver = "2"
 
-[lib]
-crate-type = ["cdylib", "rlib"]
-
-[dependencies]
-nix = { version = "0.28", features = ["fs", "user"] }
-time = { version = "0.3", features = ["formatting"] }
-serde = { version = "1.0", features = ["derive"] }
-abi_stable = { version = "0.11" }
-ostree = { version = "0.20", features = ["v2022_6"] }
-glib = { version = "0.10" }
-tempfile = "3.8"
-regex = "1.12.3"
-toml = "0.8"
+[workspace.dependencies]
 stabby = "72.1.1"
-libc = "0.2"
-
-[target.x86_64-unknown-linux-gnu]
-rustflags = ["-C", "target-feature=+crt-static"]
+serde = { version = "1.0", features = ["derive"] }
