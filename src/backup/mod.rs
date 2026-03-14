@@ -1,4 +1,4 @@
-use crate::errors::{OSTreeError, OSTreeResult};
+use crate::errors::{OSTreeError, OSTreeResult, OSTreeStabbyResult};
 use crate::types::OSTreeOperation;
 
 use std::path::Path;

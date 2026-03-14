@@ -1,4 +1,4 @@
-use super::{OSTree, OSTreeError, OSTreeOperation, OSTreeResult};
+use super::{OSTree, OSTreeError, OSTreeOperation, OSTreeResult, OSTreeStabbyResult};
 
 use crate::lock::{ExclusiveLock, Lock, SharedLock};
 
@@ -6,8 +6,14 @@ use ostree::gio::{Cancellable, File};
 use ostree::prelude::Cast;
 use ostree::{MutableTree, Repo};
 
+use stabby::result::Result as StabResult;
+use stabby::str::Str as StabStr;
+use stabby::string::String as StabString;
+use stabby::vec::Vec as StabVec;
+
 use libc::AT_FDCWD;
 
+use std::ffi::c_void;
 use std::path::{Path, PathBuf};
 
 const OSTREE_LOCK_FILE_NAME: &str = "ostree.lock";
@@ -117,4 +123,90 @@ impl OSTree for OSTreeManager {
 
         Ok(commits)
     }
+}
+
+#[no_mangle]
+pub extern "C" fn upac_create_ostree(repo_path: StabStr) -> StabResult<*mut c_void, OSTreeError> {
+    let manager = OSTreeManager::new(PathBuf::from(repo_path.as_str()));
+
+    Ok(Box::into_raw(Box::new(manager)) as *mut c_void).into()
+}
+
+#[no_mangle]
+pub extern "C" fn upac_free_ostree(manager: *mut c_void) {
+    if !manager.is_null() {
+        unsafe { drop(Box::from_raw(manager as *mut OSTreeManager)) };
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn upac_commit(
+    manager: *mut c_void,
+    repo_path: StabStr,
+    parent_commit_hash: StabStr,
+    operation: u8,
+    packages: StabVec<StabString>,
+) -> OSTreeStabbyResult<StabString> {
+    let manager = unsafe { &*(manager as *mut OSTreeManager) };
+
+    let parent = if parent_commit_hash.is_empty() {
+        None
+    } else {
+        Some(parent_commit_hash.as_str())
+    };
+
+    let operation = match operation {
+        0 => OSTreeOperation::Install,
+        1 => OSTreeOperation::Remove,
+        _ => OSTreeOperation::Update,
+    };
+
+    let packages: Vec<&str> = packages.iter().map(|string| string.as_str()).collect();
+
+    manager
+        .commit(
+            &PathBuf::from(repo_path.as_str()),
+            parent,
+            operation,
+            &packages,
+        )
+        .map(|hash| StabString::from(hash.as_str()))
+        .into()
+}
+
+#[no_mangle]
+pub extern "C" fn upac_rollback(
+    manager: *mut c_void,
+    commit_hash: StabStr,
+) -> OSTreeStabbyResult<()> {
+    let manager = unsafe { &*(manager as *mut OSTreeManager) };
+
+    manager.rollback(commit_hash.as_str()).into()
+}
+
+#[no_mangle]
+pub extern "C" fn upac_remove_commit(
+    manager: *mut c_void,
+    commit_hash: StabStr,
+) -> OSTreeStabbyResult<()> {
+    let manager = unsafe { &*(manager as *mut OSTreeManager) };
+
+    manager.remove(commit_hash.as_str()).into()
+}
+
+#[no_mangle]
+pub extern "C" fn upac_list_commits(
+    manager: *mut c_void,
+) -> OSTreeStabbyResult<StabVec<StabString>> {
+    let manager = unsafe { &*(manager as *mut OSTreeManager) };
+
+    manager
+        .list_commits()
+        .map(|commits| {
+            commits
+                .into_iter()
+                .map(|string| StabString::from(string.as_str()))
+                .collect::<StabVec<StabString>>()
+        })
+        .into()
 }

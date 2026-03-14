@@ -1,17 +1,19 @@
-mod installer;
 mod backup;
+mod installer;
 
-mod database;
 mod config;
+mod database;
 
 mod errors;
-mod types;
 mod lock;
+mod types;
+
+pub use backup::backup::OSTreeManager;
 
 pub use installer::{InstallerState, PackageInstaller};
 
-pub use config::config::{UpacConfig, OStreeConfig};
+pub use config::config::{OStreeConfig, UpacConfig};
 
-pub use errors::{InstallerError, ConfigError};
+pub use errors::{ConfigError, InstallerError};
 
 pub use types::ExtractedPackage;

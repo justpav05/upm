@@ -135,19 +135,6 @@ pub enum InstallerError {
     Dependency(StabString),
 }
 
-// Конвертации внутренних ошибок в стабильные
-impl From<LockError> for InstallerError {
-    fn from(err: LockError) -> Self {
-        let msg = match err {
-            LockError::IoError(e) => format!("IO error: {e}"),
-            LockError::Nix(e) => format!("Nix error: {e}"),
-            LockError::SharedLockBusy(p) => format!("Shared lock busy: {}", p.display()),
-            LockError::ExclusiveLockBusy(p) => format!("Exclusive lock busy: {}", p.display()),
-        };
-        Self::Lock(msg.into())
-    }
-}
-
 impl From<io::Error> for InstallerError {
     fn from(err: io::Error) -> Self {
         Self::Io(err.to_string().into())
@@ -163,6 +150,25 @@ impl From<nix::Error> for InstallerError {
 impl From<StripPrefixError> for InstallerError {
     fn from(err: StripPrefixError) -> Self {
         Self::Io(err.to_string().into())
+    }
+}
+
+impl From<glib::Error> for InstallerError {
+    fn from(err: glib::Error) -> Self {
+        Self::Installer(err.to_string().into())
+    }
+}
+
+// Конвертации внутренних ошибок в стабильные
+impl From<LockError> for InstallerError {
+    fn from(err: LockError) -> Self {
+        let msg = match err {
+            LockError::IoError(e) => format!("IO error: {e}"),
+            LockError::Nix(e) => format!("Nix error: {e}"),
+            LockError::SharedLockBusy(p) => format!("Shared lock busy: {}", p.display()),
+            LockError::ExclusiveLockBusy(p) => format!("Exclusive lock busy: {}", p.display()),
+        };
+        Self::Lock(msg.into())
     }
 }
 
