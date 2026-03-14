@@ -11,15 +11,17 @@ rust-version = "1.93.1"
 members = ["."]
 
 [lib]
-crate-type = ["dylib", "rlib"]
+crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 nix = { version = "0.28", features = ["fs", "user"] }
 time = { version = "0.3", features = ["formatting"] }
 serde = { version = "1.0", features = ["derive"] }
 abi_stable = { version = "0.11" }
-ostree = { version = "0.20" }
+ostree = { version = "0.20", features = ["v2022_6"] }
+glib = { version = "0.10" }
 tempfile = "3.8"
 regex = "1.12.3"
 toml = "0.8"
 stabby = "72.1.1"
+libc = "0.2"

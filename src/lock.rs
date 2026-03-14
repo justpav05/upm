@@ -1,4 +1,6 @@
 // Imports
+use crate::errors::{LockError, LockResult};
+
 use nix::fcntl::{Flock, FlockArg, FcntlArg, fcntl};
 use nix::libc::{flock, F_WRLCK, F_UNLCK, SEEK_SET};
 
@@ -6,36 +8,6 @@ use std::fs::{File, OpenOptions};
 use std::os::unix::io::AsRawFd;
 use std::path::PathBuf;
 use std::io;
-
-// Type alias for lock Result<T, LockError>
-pub type LockResult<T> = std::result::Result<T, LockError>;
-
-// Error enum for lock operations
-#[derive(Debug)]
-pub enum LockError {
-    IoError(io::Error),
-    Nix(nix::Error),
-    SharedLockBusy(PathBuf),
-    ExclusiveLockBusy(PathBuf),
-}
-
-impl From<io::Error> for LockError {
-    fn from(err: io::Error) -> Self {
-        LockError::IoError(err)
-    }
-}
-
-impl From<nix::Error> for LockError {
-    fn from(err: nix::Error) -> Self {
-        LockError::Nix(err)
-    }
-}
-
-impl<T> From<(T, nix::errno::Errno)> for LockError {
-    fn from((_, err): (T, nix::errno::Errno)) -> Self {
-        LockError::Nix(nix::Error::from(err))
-    }
-}
 
 pub trait Lock {
 	fn lock(&self) -> LockResult<Flock<File>>;

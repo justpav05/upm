@@ -2,6 +2,7 @@
 use serde::{Deserialize, Serialize};
 
 use stabby::string::String as StabString;
+use stabby::option::Option as StabOption;
 use stabby::vec::Vec as StabVec;
 
 // Types
@@ -15,8 +16,30 @@ pub struct Package {
 
 #[stabby::stabby]
 pub struct ExtractedPackage {
-	pub name: StabString,
+    pub name: StabString,
     pub version: StabString,
     pub format: StabString,
     pub file_list: StabVec<StabString>,
+    pub dependencies: StabVec<StabString>,
+
+    pub pre_install:  StabOption<StabString>,
+    pub post_install: StabOption<StabString>,
+    pub pre_remove:   StabOption<StabString>,
+    pub post_remove:  StabOption<StabString>,
+}
+
+pub(crate) enum OSTreeOperation {
+    Install,
+    Remove,
+    Update,
+}
+
+impl OSTreeOperation {
+	pub fn as_str(&self) -> &str {
+        match self {
+            Self::Install => "install",
+            Self::Remove  => "remove",
+            Self::Update  => "update",
+        }
+    }
 }

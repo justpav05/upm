@@ -1,25 +1,25 @@
-use crate::{errors::{InstallerResult, InstallerStabbyResult}, types::ExtractedPackage};
+// mod.rs
+use crate::errors::InstallerResult;
+use crate::types::ExtractedPackage;
 
-use stabby::str::Str as StabStr;
-
-mod installer;
+pub mod installer;
+pub use installer::PackageInstaller;
 
 #[repr(u8)]
 #[stabby::stabby]
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Clone, Copy)]
 pub enum InstallerState {
-	Idle,
-	Preparing,
-	Copying,
-	Deleting,
-	Registering,
-	RollingBack,
-	Success,
-	Failed,
+    Idle,
+    Preparing,
+    Copying,
+    Deleting,
+    Registering,
+    RollingBack,
+    Success,
+    Failed,
 }
 
-#[stabby::stabby]
-pub trait Installer {
-    extern "C" fn install(&mut self, package: ExtractedPackage) -> InstallerStabbyResult<()>;
-    extern "C" fn remove(&mut self, package: StabStr) -> InstallerStabbyResult<()>;
+pub(crate) trait Installer {
+    fn install(&mut self, package: ExtractedPackage) -> InstallerResult<()>;
+    fn remove(&mut self, package: &str) -> InstallerResult<()>;
 }
