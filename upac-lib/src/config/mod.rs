@@ -1,5 +1,5 @@
 // Imports
-use crate::errors::{ConfigError, ConfigResult};
+use upac_types::{ConfigError, ConfigResult};
 
 use stabby::string::String as StabString;
 

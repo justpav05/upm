@@ -1,6 +1,6 @@
 // mod.rs
-use crate::errors::InstallerResult;
-use crate::types::ExtractedPackage;
+use upac_types::ExtractedPackage;
+use upac_types::{InstallerError, InstallerResult, InstallerStabbyResult};
 
 pub mod installer;
 pub use installer::PackageInstaller;

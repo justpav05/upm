@@ -1,8 +1,9 @@
 [package]
 name = "upac-lib"
 version = "0.1.0"
-edition = "2024"
 license = "MIT"
+edition.workspace = true
+rust-version.workspace = true
 repository = "https://github.com/justpav05/upm"
 authors = ["justpav05", "afeistel"]
 

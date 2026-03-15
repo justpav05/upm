@@ -1,5 +1,5 @@
-use crate::errors::{OSTreeError, OSTreeResult, OSTreeStabbyResult};
-use crate::types::OSTreeOperation;
+use upac_types::OSTreeOperation;
+use upac_types::{OSTreeError, OSTreeResult, OSTreeStabbyResult};
 
 use std::path::Path;
 

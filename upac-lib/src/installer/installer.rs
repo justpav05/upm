@@ -1,13 +1,13 @@
+use super::ExtractedPackage;
 use super::{Installer, InstallerState};
+use super::{InstallerError, InstallerResult, InstallerStabbyResult};
 
 use crate::database::{Database, PackageDatabase};
-use crate::errors::{InstallerError, InstallerResult, InstallerStabbyResult};
-use crate::types::ExtractedPackage;
 
 use stabby::result::Result as StabResult;
 use stabby::str::Str as StabStr;
 
-use nix::unistd::{chown, Gid, Uid};
+use nix::unistd::{Gid, Uid, chown};
 
 use std::ffi::c_void;
 use std::fs;

@@ -1,6 +1,6 @@
 // Imports
-use crate::types::{ExtractedPackage, Package};
-use crate::errors::{DatabaseResult, DatabaseError};
+use upac_types::{DatabaseError, DatabaseResult};
+use upac_types::{ExtractedPackage, Package};
 
 use std::path::{Path, PathBuf};
 
@@ -17,5 +17,4 @@ pub trait Database {
     fn get_package_files(&self, package_id: &str) -> DatabaseResult<Vec<PathBuf>>;
     fn add_file(&mut self, package_id: &str, file_path: &Path) -> DatabaseResult<()>;
     fn remove_file(&mut self, package_id: &str, file_path: &Path) -> DatabaseResult<()>;
-
 }

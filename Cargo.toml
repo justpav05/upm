@@ -6,6 +6,10 @@ members = [
 ]
 resolver = "2"
 
+[workspace.package]
+rust-version = "1.94.0"
+edition = "2021"
+
 [workspace.dependencies]
 stabby = "72.1.1"
 serde = { version = "1.0", features = ["derive"] }
