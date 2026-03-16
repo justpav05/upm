@@ -7,6 +7,11 @@ rust-version.workspace = true
 [dependencies]
 stabby = { workspace = true }
 serde = { workspace = true }
-toml = "0.8"
-ostree = { version = "0.20", features = ["v2022_6"] }
-nix = { version = "0.28", features = ["fs", "user"] }
+toml = { version = "0.8", optional = true }
+ostree = { version = "0.20", features = ["v2022_6"], optional = true }
+nix = { version = "0.28", features = ["fs", "user"], optional = true }
+
+[features]
+nix-errors    = ["dep:nix"]
+ostree-errors = ["dep:ostree"]
+toml-errors   = ["dep:toml"]

@@ -11,7 +11,11 @@ authors = ["justpav05", "afeistel"]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-upac-types = { path = "../upac-types" }
+upac-types = { path = "../upac-types", features = [
+    "nix-errors",
+    "ostree-errors",
+    "toml-errors",
+] }
 stabby = { workspace = true }
 serde = { workspace = true }
 nix = { version = "0.28", features = ["fs", "user"] }

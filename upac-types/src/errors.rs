@@ -1,43 +1,45 @@
 use stabby::result::Result as StabbyResult;
 use stabby::string::String as StabString;
 
-use toml::{de, ser};
-
-use ostree::glib;
-
 use std::fmt;
 use std::fmt::{Debug, Display, Formatter};
 use std::io;
+use std::io::Error as IoError;
 use std::path::PathBuf;
 use std::path::StripPrefixError;
 
+// ─── LockError ───────────────────────────────────────────────────────────────
+
 #[derive(Debug)]
 pub enum LockError {
-    IoError(io::Error),
-    Nix(nix::Error),
+    IoError(IoError),
+    Nix(String),
     SharedLockBusy(PathBuf),
     ExclusiveLockBusy(PathBuf),
 }
 
-impl From<io::Error> for LockError {
-    fn from(err: io::Error) -> Self {
+impl From<IoError> for LockError {
+    fn from(err: IoError) -> Self {
         LockError::IoError(err)
     }
 }
 
+#[cfg(feature = "nix-errors")]
 impl From<nix::Error> for LockError {
     fn from(err: nix::Error) -> Self {
-        LockError::Nix(err)
+        LockError::Nix(err.to_string())
     }
 }
 
+#[cfg(feature = "nix-errors")]
 impl<T> From<(T, nix::errno::Errno)> for LockError {
     fn from((_, err): (T, nix::errno::Errno)) -> Self {
-        LockError::Nix(nix::Error::from(err))
+        LockError::Nix(nix::Error::from(err).to_string())
     }
 }
 
-// Enums for config errors
+// ─── ConfigError ─────────────────────────────────────────────────────────────
+
 #[repr(stabby)]
 #[stabby::stabby]
 pub enum ConfigError {
@@ -45,14 +47,15 @@ pub enum ConfigError {
     ParseError(StabString),
     PathError(StabString),
 }
-// Implementations for io::Error to config errors
+
 impl From<io::Error> for ConfigError {
     fn from(err: io::Error) -> Self {
         ConfigError::IoError(err.to_string().into())
     }
 }
 
-impl From<de::Error> for ConfigError {
+#[cfg(feature = "toml-errors")]
+impl From<toml::de::Error> for ConfigError {
     fn from(err: toml::de::Error) -> Self {
         ConfigError::ParseError(err.to_string().into())
     }
@@ -65,7 +68,7 @@ impl Debug for ConfigError {
 }
 
 impl Display for ConfigError {
-    fn fmt(&self, formatter: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
         let msg = self.0.match_ref(
             |err| format!("IO error: {err}"),
             |inner| {
@@ -79,29 +82,33 @@ impl Display for ConfigError {
     }
 }
 
+// ─── DatabaseError ───────────────────────────────────────────────────────────
+
 #[derive(Debug)]
 pub enum DatabaseError {
-    Io(io::Error),
+    Io(IoError),
     Toml(String),
     NotFound,
     Lock,
     Path(PathBuf),
 }
 
-impl From<io::Error> for DatabaseError {
-    fn from(err: io::Error) -> Self {
+impl From<IoError> for DatabaseError {
+    fn from(err: IoError) -> Self {
         DatabaseError::Io(err)
     }
 }
 
-impl From<ser::Error> for DatabaseError {
-    fn from(err: ser::Error) -> Self {
+#[cfg(feature = "toml-errors")]
+impl From<toml::ser::Error> for DatabaseError {
+    fn from(err: toml::ser::Error) -> Self {
         DatabaseError::Toml(err.to_string())
     }
 }
 
-impl From<de::Error> for DatabaseError {
-    fn from(err: de::Error) -> Self {
+#[cfg(feature = "toml-errors")]
+impl From<toml::de::Error> for DatabaseError {
+    fn from(err: toml::de::Error) -> Self {
         DatabaseError::Toml(err.to_string())
     }
 }
@@ -112,18 +119,19 @@ impl From<LockError> for DatabaseError {
     }
 }
 
-// Implementations for converting DatabaseError to human-readable string
 impl Display for DatabaseError {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Io(err) => write!(formatter, "IO error: {}", err),
-            Self::Toml(err) => write!(formatter, "TOML error: {}", err),
+            Self::Io(err) => write!(formatter, "IO error: {err}"),
+            Self::Toml(err) => write!(formatter, "TOML error: {err}"),
             Self::NotFound => write!(formatter, "Not found"),
             Self::Lock => write!(formatter, "Lock error"),
             Self::Path(path) => write!(formatter, "Path error: {}", path.display()),
         }
     }
 }
+
+// ─── InstallerError ──────────────────────────────────────────────────────────
 
 #[repr(stabby)]
 #[stabby::stabby]
@@ -135,14 +143,8 @@ pub enum InstallerError {
     Dependency(StabString),
 }
 
-impl From<io::Error> for InstallerError {
-    fn from(err: io::Error) -> Self {
-        Self::Io(err.to_string().into())
-    }
-}
-
-impl From<nix::Error> for InstallerError {
-    fn from(err: nix::Error) -> Self {
+impl From<IoError> for InstallerError {
+    fn from(err: IoError) -> Self {
         Self::Io(err.to_string().into())
     }
 }
@@ -153,13 +155,20 @@ impl From<StripPrefixError> for InstallerError {
     }
 }
 
-impl From<glib::Error> for InstallerError {
-    fn from(err: glib::Error) -> Self {
+#[cfg(feature = "nix-errors")]
+impl From<nix::Error> for InstallerError {
+    fn from(err: nix::Error) -> Self {
+        Self::Io(err.to_string().into())
+    }
+}
+
+#[cfg(feature = "ostree-errors")]
+impl From<ostree::glib::Error> for InstallerError {
+    fn from(err: ostree::glib::Error) -> Self {
         Self::Installer(err.to_string().into())
     }
 }
 
-// Конвертации внутренних ошибок в стабильные
 impl From<LockError> for InstallerError {
     fn from(err: LockError) -> Self {
         let msg = match err {
@@ -185,6 +194,8 @@ impl From<DatabaseError> for InstallerError {
     }
 }
 
+// ─── OSTreeError ─────────────────────────────────────────────────────────────
+
 #[repr(stabby)]
 #[stabby::stabby]
 pub enum OSTreeError {
@@ -195,14 +206,15 @@ pub enum OSTreeError {
     Io(StabString),
 }
 
-impl From<std::io::Error> for OSTreeError {
-    fn from(err: std::io::Error) -> Self {
+impl From<IoError> for OSTreeError {
+    fn from(err: IoError) -> Self {
         OSTreeError::Io(err.to_string().into())
     }
 }
 
-impl From<glib::Error> for OSTreeError {
-    fn from(err: glib::Error) -> Self {
+#[cfg(feature = "ostree-errors")]
+impl From<ostree::glib::Error> for OSTreeError {
+    fn from(err: ostree::glib::Error) -> Self {
         OSTreeError::Io(err.to_string().into())
     }
 }
@@ -234,10 +246,10 @@ impl Display for OSTreeError {
     }
 }
 
-// Алиасы
+// ─── Алиасы ──────────────────────────────────────────────────────────────────
+
 pub type LockResult<T> = Result<T, LockError>;
 pub type DatabaseResult<T> = Result<T, DatabaseError>;
-
 pub type ConfigResult<T> = Result<T, ConfigError>;
 
 pub type OSTreeResult<T> = Result<T, OSTreeError>;
