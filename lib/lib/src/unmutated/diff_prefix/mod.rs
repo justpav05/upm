@@ -14,6 +14,7 @@ use upac_abi::request::CDiffPrefixRequest;
 use upac_types::RequestedPrefixDigestRange;
 use upac_types::entry::DiffPrefixFileEntry;
 use upac_types::hook::Message;
+use upac_types::response::DiffPrefixResponse;
 use upac_types::states::DiffPrefixStateId;
 use upac_types::traits::MessageHook;
 
@@ -66,7 +67,7 @@ impl<'a> TryFrom<&'a CDiffPrefixRequest> for DiffPrefixData<'a> {
     }
 }
 
-pub fn run(data: DiffPrefixData) -> Result<(Vec<DiffPrefixFileEntry>,), (DiffPrefixStateId, DiffPrefixError)> {
+pub fn run(data: DiffPrefixData) -> Result<DiffPrefixResponse, (DiffPrefixStateId, DiffPrefixError)> {
     let mut context = Context::new();
     context.put(RequestedPrefixDigestRange {
         from: data.from_prefix_digest.map(str::to_owned),
@@ -76,12 +77,14 @@ pub fn run(data: DiffPrefixData) -> Result<(Vec<DiffPrefixFileEntry>,), (DiffPre
 
     let orchestrator = SequentialOrchestrator::new(vec![Box::new(PreparingStage), Box::new(ComparingStage)]);
 
-    run_unmutated!(
+    let (files,) = run_unmutated!(
         orchestrator,
         context,
         data.cancel_token,
         DiffPrefixStateId,
         DiffPrefixError,
         Vec<DiffPrefixFileEntry>
-    )
+    )?;
+
+    Ok(DiffPrefixResponse { files })
 }

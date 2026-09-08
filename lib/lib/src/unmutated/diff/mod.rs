@@ -14,6 +14,7 @@ use upac_abi::{DiffFileSource, FileDiffKind};
 use upac_types::entry::{DiffPackageEntry, DiffUntrackedFileEntry};
 use upac_types::hook::Message;
 use upac_types::package::PackageMeta;
+use upac_types::response::DiffResponse;
 use upac_types::states::DiffStateId;
 use upac_types::traits::MessageHook;
 use upac_types::{RequestedConfigDigestRange, RequestedPrefixDigestRange};
@@ -73,21 +74,23 @@ impl<'a> TryFrom<&'a CDiffRequest> for DiffData<'a> {
     }
 }
 
-pub fn run(data: DiffData) -> Result<(Vec<DiffPackageEntry>, Vec<DiffUntrackedFileEntry>), (DiffStateId, DiffError)> {
+pub fn run(data: DiffData) -> Result<DiffResponse, (DiffStateId, DiffError)> {
     let mut context = Context::new();
     context.put(RequestedPrefixDigestRange {
         from: data.from_prefix_digest.map(str::to_owned),
         to: data.to_prefix_digest.map(str::to_owned),
     });
+
     context.put(RequestedConfigDigestRange {
         from: data.from_config_digest.map(str::to_owned),
         to: data.to_config_digest.map(str::to_owned),
     });
+
     context.put(Box::new(Message::new(data.hook_message, data.hook_message_context)) as Box<dyn MessageHook>);
 
     let orchestrator = SequentialOrchestrator::new(vec![Box::new(PreparingStage), Box::new(ComparingStage)]);
 
-    run_unmutated!(
+    let (diff_packages, unattached_files) = run_unmutated!(
         orchestrator,
         context,
         data.cancel_token,
@@ -95,5 +98,10 @@ pub fn run(data: DiffData) -> Result<(Vec<DiffPackageEntry>, Vec<DiffUntrackedFi
         DiffError,
         Vec<DiffPackageEntry>,
         Vec<DiffUntrackedFileEntry>
-    )
+    )?;
+
+    Ok(DiffResponse {
+        diff_packages,
+        unattached_files,
+    })
 }

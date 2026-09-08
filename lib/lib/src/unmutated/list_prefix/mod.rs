@@ -12,6 +12,7 @@ use upac_abi::request::CListPrefixRequest;
 
 use upac_types::entry::PrefixEntry;
 use upac_types::hook::Message;
+use upac_types::response::ListPrefixResponse;
 use upac_types::states::ListPrefixStateId;
 use upac_types::traits::MessageHook;
 
@@ -49,18 +50,20 @@ impl<'a> TryFrom<&'a CListPrefixRequest> for ListPrefixData<'a> {
     }
 }
 
-pub fn run(data: ListPrefixData) -> Result<(Vec<PrefixEntry>,), (ListPrefixStateId, ListPrefixError)> {
+pub fn run(data: ListPrefixData) -> Result<ListPrefixResponse, (ListPrefixStateId, ListPrefixError)> {
     let mut context = Context::new();
     context.put(Box::new(Message::new(data.hook_message, data.hook_message_context)) as Box<dyn MessageHook>);
 
     let orchestrator = SequentialOrchestrator::new(vec![Box::new(FetchingStage)]);
 
-    run_unmutated!(
+    let (prefixes,) = run_unmutated!(
         orchestrator,
         context,
         data.cancel_token,
         ListPrefixStateId,
         ListPrefixError,
         Vec<PrefixEntry>
-    )
+    )?;
+
+    Ok(ListPrefixResponse { prefixes })
 }

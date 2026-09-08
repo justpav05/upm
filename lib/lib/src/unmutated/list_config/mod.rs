@@ -13,6 +13,7 @@ use upac_abi::request::CListConfigRequest;
 use upac_types::RequestedPrefixDigest;
 use upac_types::entry::ConfigCommitEntry;
 use upac_types::hook::Message;
+use upac_types::response::ListConfigResponse;
 use upac_types::states::ListConfigStateId;
 use upac_types::traits::MessageHook;
 
@@ -54,19 +55,21 @@ impl<'a> TryFrom<&'a CListConfigRequest> for ListConfigData<'a> {
     }
 }
 
-pub fn run(data: ListConfigData) -> Result<(Vec<ConfigCommitEntry>,), (ListConfigStateId, ListConfigError)> {
+pub fn run(data: ListConfigData) -> Result<ListConfigResponse, (ListConfigStateId, ListConfigError)> {
     let mut context = Context::new();
     context.put(RequestedPrefixDigest(data.prefix_digest.map(str::to_owned)));
     context.put(Box::new(Message::new(data.hook_message, data.hook_message_context)) as Box<dyn MessageHook>);
 
     let orchestrator = SequentialOrchestrator::new(vec![Box::new(FetchingStage)]);
 
-    run_unmutated!(
+    let (commits,) = run_unmutated!(
         orchestrator,
         context,
         data.cancel_token,
         ListConfigStateId,
         ListConfigError,
         Vec<ConfigCommitEntry>
-    )
+    )?;
+
+    Ok(ListConfigResponse { commits })
 }

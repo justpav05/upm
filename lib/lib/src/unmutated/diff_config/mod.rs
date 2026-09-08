@@ -14,6 +14,7 @@ use upac_abi::request::CDiffConfigRequest;
 use upac_types::RequestedConfigDigestRange;
 use upac_types::entry::DiffConfigFileEntry;
 use upac_types::hook::Message;
+use upac_types::response::DiffConfigResponse;
 use upac_types::states::DiffConfigStateId;
 use upac_types::traits::MessageHook;
 
@@ -66,7 +67,7 @@ impl<'a> TryFrom<&'a CDiffConfigRequest> for DiffConfigData<'a> {
     }
 }
 
-pub fn run(data: DiffConfigData) -> Result<(Vec<DiffConfigFileEntry>,), (DiffConfigStateId, DiffConfigError)> {
+pub fn run(data: DiffConfigData) -> Result<DiffConfigResponse, (DiffConfigStateId, DiffConfigError)> {
     let mut context = Context::new();
     context.put(RequestedConfigDigestRange {
         from: data.from_config_digest.map(str::to_owned),
@@ -76,12 +77,14 @@ pub fn run(data: DiffConfigData) -> Result<(Vec<DiffConfigFileEntry>,), (DiffCon
 
     let orchestrator = SequentialOrchestrator::new(vec![Box::new(PreparingStage), Box::new(ComparingStage)]);
 
-    run_unmutated!(
+    let (files,) = run_unmutated!(
         orchestrator,
         context,
         data.cancel_token,
         DiffConfigStateId,
         DiffConfigError,
         Vec<DiffConfigFileEntry>
-    )
+    )?;
+
+    Ok(DiffConfigResponse { files })
 }

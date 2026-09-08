@@ -12,6 +12,7 @@ use upac_abi::request::CSearchMetaRequest;
 
 use upac_types::hook::Message;
 use upac_types::package::PackageMeta;
+use upac_types::response::SearchMetaResponse;
 use upac_types::states::SearchMetaStateId;
 use upac_types::traits::MessageHook;
 
@@ -56,7 +57,7 @@ impl<'a> TryFrom<&'a CSearchMetaRequest> for SearchMetaData<'a> {
     }
 }
 
-pub fn run(data: SearchMetaData) -> Result<(Vec<PackageMeta>,), (SearchMetaStateId, SearchMetaError)> {
+pub fn run(data: SearchMetaData) -> Result<SearchMetaResponse, (SearchMetaStateId, SearchMetaError)> {
     let search = Search::new(data.search, data.is_regex)
         .map_err(|error| (SearchMetaStateId::Setup, SearchMetaError::from(error)))?;
 
@@ -66,12 +67,14 @@ pub fn run(data: SearchMetaData) -> Result<(Vec<PackageMeta>,), (SearchMetaState
 
     let orchestrator = SequentialOrchestrator::new(vec![Box::new(SearchingStage)]);
 
-    run_unmutated!(
+    let (metas,) = run_unmutated!(
         orchestrator,
         context,
         data.cancel_token,
         SearchMetaStateId,
         SearchMetaError,
         Vec<PackageMeta>
-    )
+    )?;
+
+    Ok(SearchMetaResponse { metas })
 }

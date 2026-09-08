@@ -13,6 +13,7 @@ use upac_abi::request::CDiffPackagesRequest;
 use upac_types::RequestedPrefixDigestRange;
 use upac_types::entry::DiffPackageEntry;
 use upac_types::hook::Message;
+use upac_types::response::DiffPackagesResponse;
 use upac_types::states::DiffPackagesStateId;
 use upac_types::traits::MessageHook;
 
@@ -58,7 +59,7 @@ impl<'a> TryFrom<&'a CDiffPackagesRequest> for DiffPackagesData<'a> {
     }
 }
 
-pub fn run(data: DiffPackagesData) -> Result<(Vec<DiffPackageEntry>,), (DiffPackagesStateId, DiffPackagesError)> {
+pub fn run(data: DiffPackagesData) -> Result<DiffPackagesResponse, (DiffPackagesStateId, DiffPackagesError)> {
     let mut context = Context::new();
     context.put(RequestedPrefixDigestRange {
         from: data.from_prefix_digest.map(str::to_owned),
@@ -68,12 +69,14 @@ pub fn run(data: DiffPackagesData) -> Result<(Vec<DiffPackageEntry>,), (DiffPack
 
     let orchestrator = SequentialOrchestrator::new(vec![Box::new(PreparingStage), Box::new(ComparingStage)]);
 
-    run_unmutated!(
+    let (diff_packages,) = run_unmutated!(
         orchestrator,
         context,
         data.cancel_token,
         DiffPackagesStateId,
         DiffPackagesError,
         Vec<DiffPackageEntry>
-    )
+    )?;
+
+    Ok(DiffPackagesResponse { diff_packages })
 }

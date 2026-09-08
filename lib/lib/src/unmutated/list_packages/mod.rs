@@ -12,6 +12,7 @@ use upac_abi::request::CListPackagesRequest;
 
 use upac_types::hook::Message;
 use upac_types::package::PackageMeta;
+use upac_types::response::ListPackagesResponse;
 use upac_types::states::ListPackagesStateId;
 use upac_types::traits::MessageHook;
 
@@ -49,18 +50,20 @@ impl<'a> TryFrom<&'a CListPackagesRequest> for ListPackagesData<'a> {
     }
 }
 
-pub fn run(data: ListPackagesData) -> Result<(Vec<PackageMeta>,), (ListPackagesStateId, ListPackagesError)> {
+pub fn run(data: ListPackagesData) -> Result<ListPackagesResponse, (ListPackagesStateId, ListPackagesError)> {
     let mut context = Context::new();
     context.put(Box::new(Message::new(data.hook_message, data.hook_message_context)) as Box<dyn MessageHook>);
 
     let orchestrator = SequentialOrchestrator::new(vec![Box::new(FetchingStage)]);
 
-    run_unmutated!(
+    let (metas,) = run_unmutated!(
         orchestrator,
         context,
         data.cancel_token,
         ListPackagesStateId,
         ListPackagesError,
         Vec<PackageMeta>
-    )
+    )?;
+
+    Ok(ListPackagesResponse { metas })
 }

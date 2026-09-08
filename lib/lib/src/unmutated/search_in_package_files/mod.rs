@@ -13,6 +13,7 @@ use upac_abi::request::CSearchInPackageFilesRequest;
 use upac_types::entry::SearchFileEntry;
 use upac_types::hook::Message;
 use upac_types::package::PackageEntry;
+use upac_types::response::SearchInPackageFilesResponse;
 use upac_types::states::SearchInPackageFilesStateId;
 use upac_types::traits::MessageHook;
 
@@ -65,7 +66,7 @@ impl<'a> TryFrom<&'a CSearchInPackageFilesRequest> for SearchInPackageFilesData<
 
 pub fn run(
     data: SearchInPackageFilesData,
-) -> Result<(Vec<SearchFileEntry>,), (SearchInPackageFilesStateId, SearchInPackageFilesError)> {
+) -> Result<SearchInPackageFilesResponse, (SearchInPackageFilesStateId, SearchInPackageFilesError)> {
     let search = Search::new(data.search, data.is_regex).map_err(|error| {
         (
             SearchInPackageFilesStateId::Setup,
@@ -84,12 +85,14 @@ pub fn run(
 
     let orchestrator = SequentialOrchestrator::new(vec![Box::new(SearchingStage)]);
 
-    run_unmutated!(
+    let (files,) = run_unmutated!(
         orchestrator,
         context,
         data.cancel_token,
         SearchInPackageFilesStateId,
         SearchInPackageFilesError,
         Vec<SearchFileEntry>
-    )
+    )?;
+
+    Ok(SearchInPackageFilesResponse { files })
 }
