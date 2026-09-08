@@ -3,11 +3,14 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later WITH LGPL-3.0-linking-exception
 
-use upac_abi::hook::{CancelToken, ProgressEventBuilder};
+use upac_abi::hook::CancelToken;
 
-use crate::mutated::installer::{InstallError, ResolvedBootEntry};
+use upac_types::hook::ProgressEventBuilder;
+
+use super::{InstallError, ResolvedBootEntry};
+
+use crate::orchestrator::context::{Context, ctx_take};
 use crate::orchestrator::stage::{NoRollback, RollbackGuard, Stage, StageResult};
-use crate::orchestrator::{Context, ctx_take};
 
 pub struct SwapStage;
 

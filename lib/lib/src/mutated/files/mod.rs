@@ -11,13 +11,17 @@ use composefs::tree::FileSystem;
 
 use uuid::Uuid;
 
+use upac_abi::HookMessageFn;
 use upac_abi::error::ErrorKind;
-use upac_abi::hook::{CancelToken, HookMessageFn, Message, MessageHook};
+use upac_abi::hook::CancelToken;
 use upac_abi::package::CPackageInfo;
 use upac_abi::request::CFilesRequest;
 use upac_abi::{DiffFileSource, FileDiffKind};
 
-pub use self::error::FilesError;
+use upac_types::TmpPath;
+use upac_types::hook::Message;
+use upac_types::states::FilesStateId;
+use upac_types::traits::MessageHook;
 
 use self::apply::ApplyFileStage;
 use self::checkout::CheckoutStage;
@@ -29,12 +33,13 @@ use crate::composefs::repository::ObjectID;
 use crate::database::MemoryDatabase;
 use crate::deploy::retention::RetentionStage;
 use crate::deploy::{Deploy, DeployMode};
-use crate::orchestrator::{Context, Orchestrator, SequentialOrchestrator, run_mutating};
+use crate::orchestrator::context::Context;
+use crate::orchestrator::{Orchestrator, SequentialOrchestrator, run_mutating};
 use crate::plugin::boot::BootPlugin;
 use crate::scripts::HookStage;
 use crate::scripts::pipeline::{Operation, PipelineTrigger};
-use upac_types::TmpPath;
-use upac_types::states::FilesStateId;
+
+pub use self::error::FilesError;
 
 mod apply;
 mod checkout;
@@ -111,7 +116,8 @@ impl<'a> TryFrom<&'a CFilesRequest> for FilesData<'a> {
         unsafe { request.validate()? };
 
         let file_package = unsafe { request.file_package.as_ref() }.ok_or(ErrorKind::InvalidEntry)?;
-        let cancel_token = unsafe { request.base.cancel_token.as_ref() }.ok_or(ErrorKind::InvalidEntry)?;
+
+        let cancel_token = unsafe { &*request.base.cancel_token };
 
         Ok(FilesData {
             files: Vec::try_from(&request.files)?,

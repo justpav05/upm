@@ -7,16 +7,19 @@ use composefs::generic_tree::Stat;
 use composefs::repository::ImportContext;
 use composefs::tree::FileSystem;
 
-use upac_abi::hook::{CancelToken, ProgressEventBuilder};
+use upac_abi::hook::CancelToken;
+
+use upac_types::hook::ProgressEventBuilder;
+
+use super::{ImportedConfigDefaults, ImportedDatabase, ImportedTree, InstallError};
 
 use crate::composefs::file::FileHandle;
 use crate::database::{InMemory, MemoryDatabase};
 use crate::deploy::Deploy;
 use crate::deploy::digest::current_prefix_digest;
 use crate::layout::database::DATABASE_PATH;
-use crate::mutated::installer::{ImportedConfigDefaults, ImportedDatabase, ImportedTree, InstallError};
+use crate::orchestrator::context::{Context, ctx_get};
 use crate::orchestrator::stage::{NoRollback, RollbackGuard, Stage, StageResult};
-use crate::orchestrator::{Context, ctx_get};
 
 pub struct OpenTransactionStage;
 

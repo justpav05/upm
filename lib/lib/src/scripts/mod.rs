@@ -5,23 +5,24 @@
 
 use std::collections::{HashMap, HashSet};
 
-use upac_abi::hook::{CancelToken, ProgressEventBuilder};
+use upac_abi::hook::CancelToken;
+use upac_types::hook::ProgressEventBuilder;
 
-use upac_types::DeclarativeTrigger;
+use upac_types::decoder::DeclarativeTrigger;
 
 use crate::errors::CommonError;
 use crate::layout::hooks::{HOOK_EXTENSION, HOOKS_DIR, ROOT_CERT_PATH, SIGNATURE_EXTENSION};
+use crate::orchestrator::context::Context;
 use crate::orchestrator::stage::{ConcurrentStage, RollbackGuard, Stage, StageResult};
-use crate::orchestrator::{Context, Orchestrator, ParallelOrchestrator};
+use crate::orchestrator::{Orchestrator, ParallelOrchestrator};
 use crate::plugin::decoder::triggers::build_trigger_table;
 use crate::scripts::error::HookError;
-use crate::scripts::load::load_hooks;
+use crate::scripts::file::HookFile;
 use crate::scripts::pipeline::{PipelineTrigger, Timing};
 use crate::scripts::primitive::Primitive;
 
 pub mod error;
 pub mod file;
-pub mod load;
 pub mod pipeline;
 pub mod primitive;
 
@@ -82,4 +83,38 @@ impl<E: From<CommonError> + Send + 'static> Stage<E> for HookStage {
 
         Ok((progress, StageResult::Advance, Box::new(Vec::<Primitive>::new())))
     }
+}
+
+pub fn load_hooks(
+    hooks_dir: &str, root_cert_path: &str, hook_extension: &str, signature_extension: &str,
+) -> Result<Vec<HookFile>, HookError> {
+    let root_bytes = fs::read(root_cert_path)?;
+    let root_certificate = RootCertificate::from_bytes(&root_bytes)?;
+
+    let mut hooks = Vec::new();
+
+    for entry in fs::read_dir(hooks_dir)? {
+        let path = entry?.path();
+
+        if path.extension().and_then(|extension| extension.to_str()) != Some(hook_extension) {
+            continue;
+        }
+
+        let mut signature_path = path.clone().into_os_string();
+        signature_path.push(".");
+        signature_path.push(signature_extension);
+
+        let hook_bytes = fs::read(&path)?;
+        let signature_bytes = fs::read(&signature_path)?;
+
+        let signature = HookSignature::from_bytes(&signature_bytes)?;
+        signature.verify(&hook_bytes, &root_certificate)?;
+
+        let hook_text = from_utf8(&hook_bytes)?;
+        let hook_file = HookFile::parse(hook_text)?;
+
+        hooks.push(hook_file);
+    }
+
+    Ok(hooks)
 }

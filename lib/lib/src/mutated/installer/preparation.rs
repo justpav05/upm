@@ -7,14 +7,16 @@ use std::fs::remove_dir_all;
 use std::path::PathBuf;
 
 use upac_abi::error::ErrorKind;
-use upac_abi::hook::{CancelToken, ProgressEventBuilder};
+use upac_abi::hook::CancelToken;
 
 use upac_types::TmpPath;
+use upac_types::hook::ProgressEventBuilder;
+
+use super::{InstallError, PendingPackagePaths, PendingPackages, TotalPackages, UnpackerState};
 
 use crate::errors::CommonError;
-use crate::mutated::installer::{InstallError, PendingPackagePaths, PendingPackages, TotalPackages, UnpackerState};
+use crate::orchestrator::context::{Context, ctx_get, ctx_take};
 use crate::orchestrator::stage::{RollbackGuard, Stage, StageResult};
-use crate::orchestrator::{Context, ctx_get, ctx_take};
 
 pub struct PreparationStage;
 

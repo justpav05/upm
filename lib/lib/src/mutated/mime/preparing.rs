@@ -5,12 +5,15 @@
 
 use std::fs;
 
-use upac_abi::hook::{CancelToken, ProgressEventBuilder};
+use upac_abi::hook::CancelToken;
+
+use upac_types::hook::ProgressEventBuilder;
+
+use super::{DesktopContent, MimeError};
 
 use crate::errors::CommonError;
 use crate::layout::{decoders, mime};
-use crate::mutated::mime::{DesktopContent, MimeError};
-use crate::orchestrator::Context;
+use crate::orchestrator::context::Context;
 use crate::orchestrator::stage::{NoRollback, RollbackGuard, Stage, StageResult};
 use crate::plugin::decoder::manifest::load_decoder_manifests;
 

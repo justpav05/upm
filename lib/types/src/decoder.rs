@@ -5,23 +5,47 @@
 
 use std::io::Read;
 
-use upac_abi::decoder::DecodeError;
+use upac_macro::RedbCodec;
 
-use crate::{Dependency, PackageMeta};
+use super::error::DecodeError;
+
+#[derive(Debug, Clone, RedbCodec)]
+pub struct DeclarativeTrigger {
+    pub format: String,
+    pub triggers: Vec<String>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DecoderTrigger {
+    PreInstall,
+    PostInstall,
+    PreUpgrade,
+    PostUpgrade,
+    PreRemove,
+    PostRemove,
+}
+
+impl DecoderTrigger {
+    pub const ALL: [DecoderTrigger; 6] = [
+        DecoderTrigger::PreInstall,
+        DecoderTrigger::PostInstall,
+        DecoderTrigger::PreUpgrade,
+        DecoderTrigger::PostUpgrade,
+        DecoderTrigger::PreRemove,
+        DecoderTrigger::PostRemove,
+    ];
+}
+
+pub fn parse_constraint_prefix(token: &[u8], operators: &[(&[u8], u8)]) -> Option<(u8, usize)> {
+    operators
+        .iter()
+        .find(|(operator, _)| token.starts_with(operator))
+        .map(|(operator, constraint)| (*constraint, operator.len()))
+}
 
 pub fn read_to_string<R: Read>(reader: &mut R) -> Result<String, DecodeError> {
     let mut bytes = Vec::new();
     reader.read_to_end(&mut bytes)?;
 
     String::from_utf8(bytes).map_err(|_| DecodeError::InvalidUtf8)
-}
-
-#[derive(Debug)]
-pub struct DecodedMeta {
-    pub meta: PackageMeta,
-    pub dependencies: Vec<Dependency>,
-}
-
-pub trait DecodeMeta {
-    fn decode(&self, sha256: [u8; 32]) -> Result<DecodedMeta, DecodeError>;
 }

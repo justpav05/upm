@@ -3,20 +3,23 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later WITH LGPL-3.0-linking-exception
 
-use upac_abi::hook::{CancelToken, ProgressEventBuilder};
+use upac_abi::hook::CancelToken;
 
-use upac_types::FileEntryScope;
+use upac_types::hook::ProgressEventBuilder;
+
+use upac_types::entry::FileEntryScope;
+
+use super::{
+    PendingUuids, Purge, TotalPackages, UninstallError, WorkingDatabase, WorkingRemovedConfigPaths, WorkingTree,
+};
 
 use crate::composefs::file::FileHandle;
 use crate::database::files::{FileStore, FileStoreMut};
 use crate::database::meta::{MetaStore, MetaStoreMut};
 use crate::database::triggers::TriggerStoreMut;
 use crate::errors::CommonError;
-use crate::mutated::uninstaller::{
-    PendingUuids, Purge, TotalPackages, UninstallError, WorkingDatabase, WorkingRemovedConfigPaths, WorkingTree,
-};
+use crate::orchestrator::context::{Context, ctx_get, ctx_take};
 use crate::orchestrator::stage::{NoRollback, RollbackGuard, Stage, StageResult};
-use crate::orchestrator::{Context, ctx_get, ctx_take};
 
 pub struct RemovePackageStage;
 

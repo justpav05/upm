@@ -5,12 +5,13 @@
 
 use std::collections::VecDeque;
 
-use upac_abi::hook::{CancelToken, ProgressEventBuilder};
+use upac_abi::hook::CancelToken;
+use upac_types::hook::ProgressEventBuilder;
 
 use crate::deploy::Deploy;
 use crate::mutated::gc::{CollectedRoots, GcError, PendingDeploys, TotalDeploys};
+use crate::orchestrator::context::{Context, ctx_get};
 use crate::orchestrator::stage::{NoRollback, RollbackGuard, Stage, StageResult};
-use crate::orchestrator::{Context, ctx_get};
 
 pub struct PruneStage;
 

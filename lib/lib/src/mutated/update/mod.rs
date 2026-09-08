@@ -8,13 +8,17 @@ use std::os::raw::c_void;
 
 use composefs::tree::FileSystem;
 
+use upac_abi::HookMessageFn;
 use upac_abi::error::ErrorKind;
-use upac_abi::hook::{CancelToken, HookMessageFn, Message, MessageHook};
+use upac_abi::hook::CancelToken;
 use upac_abi::request::CUpdateRequest;
 
-use upac_types::{DeclarativeTrigger, PackageTemp};
-
-pub use self::error::UpdateError;
+use upac_types::TmpPath;
+use upac_types::decoder::DeclarativeTrigger;
+use upac_types::hook::Message;
+use upac_types::package::PackageTemp;
+use upac_types::states::UpdateStateId;
+use upac_types::traits::MessageHook;
 
 use self::checkout::CheckoutStage;
 use self::commit::CommitTransactionStage;
@@ -30,13 +34,14 @@ use crate::database::MemoryDatabase;
 use crate::deploy::retention::RetentionStage;
 use crate::deploy::{Deploy, DeployMode};
 use crate::errors::CommonError;
-use crate::orchestrator::{Context, Orchestrator, SequentialOrchestrator, run_mutating};
+use crate::orchestrator::context::Context;
+use crate::orchestrator::{Orchestrator, SequentialOrchestrator, run_mutating};
 use crate::plugin::boot::BootPlugin;
 use crate::plugin::decoder::unpack::PackageUnpacker;
 use crate::scripts::HookStage;
 use crate::scripts::pipeline::{Operation, PipelineTrigger};
-use upac_types::TmpPath;
-use upac_types::states::UpdateStateId;
+
+pub use self::error::UpdateError;
 
 mod checkout;
 mod commit;
@@ -93,7 +98,7 @@ impl<'a> TryFrom<&'a CUpdateRequest> for UpdateData<'a> {
     fn try_from(request: &'a CUpdateRequest) -> Result<Self, ErrorKind> {
         unsafe { request.validate()? };
 
-        let cancel_token = unsafe { request.base.cancel_token.as_ref() }.ok_or(ErrorKind::InvalidEntry)?;
+        let cancel_token = unsafe { &*request.base.cancel_token };
 
         Ok(UpdateData {
             packages: Vec::try_from(&request.packages)?,

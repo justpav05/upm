@@ -5,13 +5,16 @@
 
 use std::mem::replace;
 
-use upac_abi::hook::{CancelToken, ProgressEventBuilder};
+use upac_abi::hook::CancelToken;
+
+use upac_types::hook::ProgressEventBuilder;
+
+use super::{PinError, RequestedPinned, RequestedPrefixDigest};
 
 use crate::database::record::DeployRecord;
 use crate::deploy::Deploy;
-use crate::mutated::pin::{PinError, RequestedPinned, RequestedPrefixDigest};
+use crate::orchestrator::context::{Context, ctx_get};
 use crate::orchestrator::stage::{RollbackGuard, Stage, StageResult};
-use crate::orchestrator::{Context, ctx_get};
 
 pub struct SetPinnedStage;
 

@@ -3,14 +3,16 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later WITH LGPL-3.0-linking-exception
 
-use upac_abi::hook::{CancelToken, ProgressEventBuilder};
+use upac_abi::hook::CancelToken;
+use upac_types::hook::ProgressEventBuilder;
+
+use super::{CollectedRoots, GcError, PendingDeploys, TotalDeploys};
 
 use crate::database::record::DeployRecord;
 use crate::deploy::Deploy;
 use crate::errors::CommonError;
-use crate::mutated::gc::{CollectedRoots, GcError, PendingDeploys, TotalDeploys};
+use crate::orchestrator::context::{Context, ctx_get, ctx_take};
 use crate::orchestrator::stage::{NoRollback, RollbackGuard, Stage, StageResult};
-use crate::orchestrator::{Context, ctx_get, ctx_take};
 
 pub struct CollectRootsStage;
 
