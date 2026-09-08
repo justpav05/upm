@@ -5,8 +5,9 @@
 
 use upac_abi::FsKind;
 
-use crate::package::{PackageEntry, PackageMeta};
+use self::package::{PackageEntry, PackageMeta};
 
+pub mod boot;
 pub mod codec;
 pub mod decoder;
 pub mod entry;

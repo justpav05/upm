@@ -5,9 +5,30 @@
 
 use std::io::Read;
 
-use upac_macro::RedbCodec;
+use upac_abi::error::ErrorKind;
+use upac_abi::hook::CancelToken;
+use upac_abi::request::CDecodeRequest;
+use upac_abi::response::CDecodeResponse;
+use upac_abi::types::{COwned, CSlice};
+use upac_macro::{CTryToRust, RedbCodec, RustToC};
 
-use crate::error::DecodeError;
+use super::error::DecodeError;
+use super::package::{PackageDependency, PackageMeta};
+
+#[derive(Debug, Clone, CTryToRust, RustToC)]
+pub struct DecodeRequest {
+    pub package_path: String,
+    pub output_dir: String,
+    pub checksum: [u8; 32],
+    pub cancel_token: *mut CancelToken,
+}
+
+#[derive(Debug, Clone, CTryToRust)]
+pub struct DecodeResponse {
+    pub meta: PackageMeta,
+    pub dependencies: Vec<PackageDependency>,
+    pub declarative_triggers: Vec<String>,
+}
 
 #[derive(Debug, Clone, RedbCodec)]
 pub struct DeclarativeTrigger {
