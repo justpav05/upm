@@ -89,7 +89,17 @@ fn field_ptr_validate(ident: &Ident, ptr: &TypePtr) -> TokenStream2 {
         return quote! {};
     };
 
-    if VALIDATABLE_COMPOSITES.contains(&seg.ident.to_string().as_str()) {
+    let name = seg.ident.to_string();
+
+    if name == "CancelToken" {
+        return quote! {
+            if self.#ident.is_null() {
+                return Err(ErrorKind::InvalidEntry);
+            }
+        };
+    }
+
+    if VALIDATABLE_COMPOSITES.contains(&name.as_str()) {
         quote! {
             unsafe {
                 if self.#ident.is_null() {
