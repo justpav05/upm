@@ -10,7 +10,7 @@ use crate::memory::free_cslice;
 use crate::types::{CSlice, check_size};
 
 #[repr(C)]
-#[derive(CFree, CValidate)]
+#[derive(CFree, CNew, CValidate)]
 pub struct CVersion {
     pub struct_size: usize,
 
@@ -20,7 +20,7 @@ pub struct CVersion {
 }
 
 #[repr(C)]
-#[derive(CFree, CValidate)]
+#[derive(CFree, CNew, CValidate)]
 pub struct CPackageMeta {
     pub struct_size: usize,
     pub name: CSlice,
@@ -50,7 +50,7 @@ pub struct CPackageInfo {
 }
 
 #[repr(C)]
-#[derive(CValidate)]
+#[derive(CFree, CNew, CValidate)]
 pub struct CPackageDependency {
     pub struct_size: usize,
 

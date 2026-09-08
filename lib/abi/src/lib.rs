@@ -5,12 +5,12 @@
 
 use std::ffi::c_void;
 
-use crate::error::ErrorKind;
-use crate::hook::{CProgressEvent, HookAck};
-use crate::request::{
+use self::error::ErrorKind;
+use self::hook::{CProgressEvent, HookAck};
+use self::request::{
     CBootPluginConfirmSuccsesBootRequest, CBootPluginInstallRequest, CBootPluginSetOneShotRequest, CDecodeRequest,
 };
-use crate::response::CDecodePackageResponse;
+use self::response::CDecodeResponse;
 
 pub mod error;
 pub mod hook;
@@ -43,10 +43,9 @@ pub type ConfirmBootFn =
 
 pub type InstallFn = unsafe extern "C" fn(request: *const CBootPluginInstallRequest, err_out: *mut ErrorKind) -> i32;
 
-pub type DecodeFn =
-    unsafe extern "C" fn(request: *const CDecodeRequest, response_out: *mut CDecodePackageResponse) -> i32;
+pub type DecodeFn = unsafe extern "C" fn(request: *const CDecodeRequest, response_out: *mut CDecodeResponse) -> i32;
 
-pub type FreeDecodeResponseFn = unsafe extern "C" fn(response: *mut CDecodePackageResponse);
+pub type FreeDecodeResponseFn = unsafe extern "C" fn(response: *mut CDecodeResponse);
 
 #[repr(u8)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
