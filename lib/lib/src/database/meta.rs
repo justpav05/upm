@@ -9,8 +9,8 @@ use twox_hash::xxhash3_64::Hasher as XxHasher;
 
 use uuid::Uuid;
 
-use upac_types::PackageMeta;
 use upac_types::codec::{RedbCodable, write_len_prefixed, write_opt_str};
+use upac_types::package::PackageMeta;
 
 use super::error::DatabaseError;
 use super::{MemoryDatabase, PACKAGES_HASH_TABLE, PACKAGES_UUID_TABLE, ReadTransactionExt, ReadableSource};

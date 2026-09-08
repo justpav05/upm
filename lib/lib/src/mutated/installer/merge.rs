@@ -8,7 +8,11 @@ use std::fs::create_dir_all;
 use composefs::fsverity::FsVerityHashValue;
 use composefs::repository::ImportContext;
 
-use upac_abi::hook::{CancelToken, ProgressEventBuilder};
+use upac_abi::hook::CancelToken;
+
+use upac_types::hook::ProgressEventBuilder;
+
+use super::{AllowConflictFiles, CommitMessage, InstallError, NewConfigDefaults, NewPrefixDigest, Subject};
 
 use crate::composefs::overlay::{apply_overlay_upper, apply_tree_overlay};
 use crate::composefs::repository::commit_tree;
@@ -18,11 +22,8 @@ use crate::database::record::DeployRecord;
 use crate::deploy::Deploy;
 use crate::deploy::digest::current_prefix_digest;
 use crate::layout::deployment::CONFIG_DIR_NAME;
-use crate::mutated::installer::{
-    AllowConflictFiles, CommitMessage, InstallError, NewConfigDefaults, NewPrefixDigest, Subject,
-};
+use crate::orchestrator::context::{Context, ctx_get, ctx_take};
 use crate::orchestrator::stage::{RollbackGuard, Stage, StageResult};
-use crate::orchestrator::{Context, ctx_get, ctx_take};
 
 pub struct MergeStage;
 

@@ -14,15 +14,15 @@ use redb::{
 
 use uuid::Uuid;
 
-use crate::layout::database::{
-    FILES_BY_PATH_TABLE_NAME, FILES_TABLE_NAME, PACKAGES_BY_NAME_TABLE_NAME, PACKAGES_TABLE_NAME,
-    PACKAGES_TRIGGERS_TABLE_NAME,
-};
-
 use self::error::DatabaseError;
 use self::files::StoredFileEntry;
 use self::meta::StoredPackageMeta;
 use self::triggers::StoredTriggers;
+
+use crate::layout::database::{
+    FILES_BY_PATH_TABLE_NAME, FILES_TABLE_NAME, PACKAGES_BY_NAME_TABLE_NAME, PACKAGES_TABLE_NAME,
+    PACKAGES_TRIGGERS_TABLE_NAME,
+};
 
 pub mod attribution;
 pub mod error;

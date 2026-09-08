@@ -3,7 +3,7 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later WITH LGPL-3.0-linking-exception
 
-use upac_types::{Dependency, PackageMeta};
+use upac_types::package::{PackageDependency, PackageMeta};
 
 #[cfg(any(feature = "dynamic-plugins", feature = "builtin-decoders"))]
 use std::mem::MaybeUninit;
@@ -17,10 +17,16 @@ use libloading::Library;
 use upac_abi::DECODER_ABI_VERSION;
 
 #[cfg(feature = "dynamic-plugins")]
-use upac_abi::decoder::AbiVersionFn;
+use upac_abi::DecodePluginAbiVersionFn;
 
 #[cfg(any(feature = "dynamic-plugins", feature = "builtin-decoders"))]
-use upac_abi::decoder::{CDecodeRequest, CDecodeResponse, DecodeFn};
+use upac_abi::DecodeFn;
+
+#[cfg(any(feature = "dynamic-plugins", feature = "builtin-decoders"))]
+use upac_abi::request::CDecodeRequest;
+
+#[cfg(any(feature = "dynamic-plugins", feature = "builtin-decoders"))]
+use upac_abi::response::CDecodePackageResponse;
 
 #[cfg(any(feature = "dynamic-plugins", feature = "builtin-decoders"))]
 use upac_abi::hook::CancelToken;
@@ -55,7 +61,7 @@ pub mod unpack;
 /// types elsewhere in the crate keep compiling.
 pub struct DecodedPackage {
     pub meta: PackageMeta,
-    pub dependencies: Vec<Dependency>,
+    pub dependencies: Vec<PackageDependency>,
     pub declarative_triggers: Vec<String>,
 }
 
@@ -93,7 +99,7 @@ impl Decoder {
     pub fn load(library_name: &str) -> Result<Self, DecoderError> {
         let library = unsafe { Library::new(library_name) }.map_err(|_| DecoderError::Load)?;
 
-        let abi_version: AbiVersionFn = unsafe { load_symbol(&library, "abi_version")? };
+        let abi_version: DecodePluginAbiVersionFn = unsafe { load_symbol(&library, "abi_version")? };
         let decode: DecodeFn = unsafe { load_symbol(&library, "decode")? };
 
         let got = unsafe { abi_version() };
@@ -123,7 +129,7 @@ impl Decoder {
             cancel as *const CancelToken as *mut CancelToken,
         );
 
-        let mut response = MaybeUninit::<CDecodeResponse>::uninit();
+        let mut response = MaybeUninit::<CDecodePackageResponse>::uninit();
 
         let code = unsafe { (self.decode)(&request, response.as_mut_ptr()) };
         if code != 0 {
@@ -138,7 +144,7 @@ impl Decoder {
 
         let dependencies = unsafe { response.dependencies.as_slice() }
             .iter()
-            .map(Dependency::try_from)
+            .map(PackageDependency::try_from)
             .collect::<Result<Vec<_>, _>>()?;
 
         let declarative_triggers = unsafe { response.declarative_triggers.as_slice() }

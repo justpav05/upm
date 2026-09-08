@@ -6,19 +6,25 @@
 use std::os::raw::c_void;
 
 use upac_abi::FileDiffKind;
+use upac_abi::HookMessageFn;
 use upac_abi::error::ErrorKind;
-use upac_abi::hook::{CancelToken, HookMessageFn, Message, MessageHook};
+use upac_abi::hook::CancelToken;
 use upac_abi::request::CDiffConfigRequest;
 
-pub use self::error::DiffConfigError;
+use upac_types::RequestedConfigDigestRange;
+use upac_types::entry::DiffConfigFileEntry;
+use upac_types::hook::Message;
+use upac_types::states::DiffConfigStateId;
+use upac_types::traits::MessageHook;
 
 use self::comparing::ComparingStage;
 use self::preparing::PreparingStage;
 
 use crate::database::MemoryDatabase;
-use crate::orchestrator::{Context, Orchestrator, SequentialOrchestrator, run_unmutated};
-use upac_types::states::DiffConfigStateId;
-use upac_types::{DiffConfigFileEntry, RequestedConfigDigestRange};
+use crate::orchestrator::context::Context;
+use crate::orchestrator::{Orchestrator, SequentialOrchestrator, run_unmutated};
+
+pub use self::error::DiffConfigError;
 
 mod comparing;
 mod error;
@@ -46,7 +52,7 @@ impl<'a> TryFrom<&'a CDiffConfigRequest> for DiffConfigData<'a> {
     fn try_from(request: &'a CDiffConfigRequest) -> Result<Self, ErrorKind> {
         unsafe { request.validate()? };
 
-        let cancel_token = unsafe { request.base.cancel_token.as_ref() }.ok_or(ErrorKind::InvalidEntry)?;
+        let cancel_token = unsafe { &*request.base.cancel_token };
 
         Ok(DiffConfigData {
             from_config_digest: (&request.from_config_digest).try_into()?,

@@ -7,8 +7,8 @@ use redb::{ReadableDatabase, TypeName, Value as RedbValue};
 
 use uuid::Uuid;
 
-use upac_types::DeclarativeTrigger;
 use upac_types::codec::RedbCodable;
+use upac_types::decoder::DeclarativeTrigger;
 
 use super::error::DatabaseError;
 use super::{MemoryDatabase, PACKAGES_TRIGGERS_TABLE, ReadTransactionExt, ReadableSource};

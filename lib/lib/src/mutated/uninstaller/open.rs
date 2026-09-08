@@ -5,19 +5,22 @@
 
 use std::collections::VecDeque;
 
-use upac_abi::hook::{CancelToken, ProgressEventBuilder};
+use upac_abi::hook::CancelToken;
+
+use upac_types::hook::ProgressEventBuilder;
+
+use super::{
+    PackageUuidsToRemove, PendingUuids, TotalPackages, UninstallError, WorkingDatabase, WorkingRemovedConfigPaths,
+    WorkingTree,
+};
 
 use crate::composefs::file::FileHandle;
 use crate::database::{InMemory, MemoryDatabase};
 use crate::deploy::Deploy;
 use crate::deploy::digest::current_prefix_digest;
 use crate::layout::database::DATABASE_PATH;
-use crate::mutated::uninstaller::{
-    PackageUuidsToRemove, PendingUuids, TotalPackages, UninstallError, WorkingDatabase, WorkingRemovedConfigPaths,
-    WorkingTree,
-};
+use crate::orchestrator::context::{Context, ctx_get, ctx_take};
 use crate::orchestrator::stage::{NoRollback, RollbackGuard, Stage, StageResult};
-use crate::orchestrator::{Context, ctx_get, ctx_take};
 
 pub struct OpenTransactionStage;
 

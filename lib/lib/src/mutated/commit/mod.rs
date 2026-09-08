@@ -5,21 +5,26 @@
 
 use std::os::raw::c_void;
 
-use upac_abi::error::ErrorKind;
-use upac_abi::hook::{CancelToken, HookMessageFn, Message, MessageHook};
-use upac_abi::request::CCommitRequest;
+use upac_types::TmpPath;
+use upac_types::hook::Message;
+use upac_types::states::CommitStateId;
+use upac_types::traits::MessageHook;
 
-pub use self::error::CommitError;
+use upac_abi::HookMessageFn;
+use upac_abi::error::ErrorKind;
+use upac_abi::hook::CancelToken;
+use upac_abi::request::CCommitRequest;
 
 use self::transaction::TransactionStage;
 
 use crate::deploy::retention::RetentionStage;
 use crate::deploy::{Deploy, DeployMode};
-use crate::orchestrator::{Context, Orchestrator, SequentialOrchestrator, run_mutating};
+use crate::orchestrator::context::Context;
+use crate::orchestrator::{Orchestrator, SequentialOrchestrator, run_mutating};
 use crate::scripts::HookStage;
 use crate::scripts::pipeline::{Operation, PipelineTrigger};
-use upac_types::TmpPath;
-use upac_types::states::CommitStateId;
+
+pub use self::error::CommitError;
 
 mod error;
 mod transaction;
@@ -45,7 +50,7 @@ impl<'a> TryFrom<&'a CCommitRequest> for CommitData<'a> {
     fn try_from(request: &'a CCommitRequest) -> Result<Self, ErrorKind> {
         unsafe { request.validate()? };
 
-        let cancel_token = unsafe { request.base.cancel_token.as_ref() }.ok_or(ErrorKind::InvalidEntry)?;
+        let cancel_token = unsafe { &*request.base.cancel_token };
 
         Ok(CommitData {
             tmp_path: (&request.tmp_path).try_into()?,

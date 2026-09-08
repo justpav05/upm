@@ -11,10 +11,16 @@ use composefs::generic_tree::Stat;
 use composefs::repository::{ImportContext, Repository};
 use composefs::tree::FileSystem;
 
-use upac_abi::hook::{CancelToken, ProgressEventBuilder};
+use upac_abi::hook::CancelToken;
 use upac_abi::{DiffFileSource, FileDiffKind};
 
-use upac_types::{FileEntry, FileEntryScope};
+use upac_types::entry::{FileEntry, FileEntryScope};
+use upac_types::hook::ProgressEventBuilder;
+
+use super::{
+    EtcUpperDir, FilesError, PendingFiles, RequestedFileKind, RequestedFileScope, TargetUuid, TotalFiles,
+    WorkingDatabase, WorkingTree,
+};
 
 use crate::composefs::error::RepoError;
 use crate::composefs::file::{FileHandle, stat_from_metadata};
@@ -23,12 +29,8 @@ use crate::database::files::FileStoreMut;
 use crate::deploy::Deploy;
 use crate::errors::CommonError;
 use crate::layout::deployment::LIVE_ETC_DIR;
-use crate::mutated::files::{
-    EtcUpperDir, FilesError, PendingFiles, RequestedFileKind, RequestedFileScope, TargetUuid, TotalFiles,
-    WorkingDatabase, WorkingTree,
-};
+use crate::orchestrator::context::{Context, ctx_get, ctx_take};
 use crate::orchestrator::stage::{NoRollback, RollbackGuard, Stage, StageResult};
-use crate::orchestrator::{Context, ctx_get, ctx_take};
 
 pub struct ApplyFileStage;
 

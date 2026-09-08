@@ -7,9 +7,12 @@ use std::path::Path;
 
 use composefs::repository::ImportContext;
 
-use upac_abi::hook::{CancelToken, ProgressEventBuilder};
+use upac_abi::hook::CancelToken;
 
-use upac_types::{FileEntry, FileEntryScope};
+use upac_types::entry::{FileEntry, FileEntryScope};
+use upac_types::hook::ProgressEventBuilder;
+
+use super::{ImportedConfigDefaults, ImportedDatabase, ImportedTree, InstallError, PendingPackages, TotalPackages};
 
 use crate::composefs::file::import_if_dir;
 use crate::database::files::FileStoreMut;
@@ -17,11 +20,8 @@ use crate::database::meta::MetaStoreMut;
 use crate::database::triggers::TriggerStoreMut;
 use crate::deploy::Deploy;
 use crate::errors::CommonError;
-use crate::mutated::installer::{
-    ImportedConfigDefaults, ImportedDatabase, ImportedTree, InstallError, PendingPackages, TotalPackages,
-};
+use crate::orchestrator::context::{Context, ctx_get, ctx_take};
 use crate::orchestrator::stage::{NoRollback, RollbackGuard, Stage, StageResult};
-use crate::orchestrator::{Context, ctx_get, ctx_take};
 
 pub struct ImportPackageStage;
 

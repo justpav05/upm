@@ -5,17 +5,22 @@
 
 use std::os::raw::c_void;
 
+use upac_abi::HookMessageFn;
 use upac_abi::error::ErrorKind;
-use upac_abi::hook::{CancelToken, HookMessageFn, Message, MessageHook};
+use upac_abi::hook::CancelToken;
 use upac_abi::request::CListHistoryRequest;
 
-pub use self::error::ListHistoryError;
+use upac_types::entry::HistoryEntry;
+use upac_types::hook::Message;
+use upac_types::states::ListHistoryStateId;
+use upac_types::traits::MessageHook;
 
 use self::fetching::FetchingStage;
 
-use crate::orchestrator::{Context, Orchestrator, SequentialOrchestrator, run_unmutated};
-use upac_types::HistoryEntry;
-use upac_types::states::ListHistoryStateId;
+use crate::orchestrator::context::Context;
+use crate::orchestrator::{Orchestrator, SequentialOrchestrator, run_unmutated};
+
+pub use self::error::ListHistoryError;
 
 mod error;
 mod fetching;
@@ -33,7 +38,7 @@ impl<'a> TryFrom<&'a CListHistoryRequest> for ListHistoryData<'a> {
     fn try_from(request: &'a CListHistoryRequest) -> Result<Self, ErrorKind> {
         unsafe { request.validate()? };
 
-        let cancel_token = unsafe { request.base.cancel_token.as_ref() }.ok_or(ErrorKind::InvalidEntry)?;
+        let cancel_token = unsafe { &*request.base.cancel_token };
 
         Ok(ListHistoryData {
             hook_message: request.base.on_hook,

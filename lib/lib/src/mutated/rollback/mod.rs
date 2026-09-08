@@ -5,11 +5,15 @@
 
 use std::os::raw::c_void;
 
+use upac_abi::HookMessageFn;
 use upac_abi::error::ErrorKind;
-use upac_abi::hook::{CancelToken, HookMessageFn, Message, MessageHook};
+use upac_abi::hook::CancelToken;
 use upac_abi::request::CRollbackRequest;
 
-pub use self::error::RollbackError;
+use upac_types::TmpPath;
+use upac_types::hook::Message;
+use upac_types::states::RollbackStateId;
+use upac_types::traits::MessageHook;
 
 use self::checkout::CheckoutStage;
 use self::merge::MergeStage;
@@ -17,12 +21,13 @@ use self::swap::SwapStage;
 
 use crate::deploy::retention::RetentionStage;
 use crate::deploy::{Deploy, DeployMode};
-use crate::orchestrator::{Context, Orchestrator, SequentialOrchestrator, run_mutating};
+use crate::orchestrator::context::Context;
+use crate::orchestrator::{Orchestrator, SequentialOrchestrator, run_mutating};
 use crate::plugin::boot::BootPlugin;
 use crate::scripts::HookStage;
 use crate::scripts::pipeline::{Operation, PipelineTrigger};
-use upac_types::TmpPath;
-use upac_types::states::RollbackStateId;
+
+pub use self::error::RollbackError;
 
 mod checkout;
 mod error;
@@ -55,7 +60,7 @@ impl<'a> TryFrom<&'a CRollbackRequest> for RollbackData<'a> {
     fn try_from(request: &'a CRollbackRequest) -> Result<Self, ErrorKind> {
         unsafe { request.validate()? };
 
-        let cancel_token = unsafe { request.base.cancel_token.as_ref() }.ok_or(ErrorKind::InvalidEntry)?;
+        let cancel_token = unsafe { &*request.base.cancel_token };
 
         Ok(RollbackData {
             config_digest: (&request.config_digest).try_into()?,

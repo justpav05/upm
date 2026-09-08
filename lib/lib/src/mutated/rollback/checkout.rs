@@ -3,16 +3,18 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later WITH LGPL-3.0-linking-exception
 
-use upac_abi::hook::{CancelToken, ProgressEventBuilder};
+use upac_abi::hook::CancelToken;
+
+use upac_types::hook::ProgressEventBuilder;
+
+use super::{RequestedBootPlugin, ResolvedBootEntry, RollbackError, TargetPrefixDigest};
 
 use crate::boot::write_boot_entry;
 use crate::composefs::repository::object_id_from_hex;
-use crate::deploy::Deploy;
-use crate::deploy::esp::find_esp_mount;
+use crate::deploy::{Deploy, find_esp_mount};
 use crate::layout::boot_plugins::{BOOT_PLUGINS_DIR, MANIFEST_EXTENSION};
-use crate::mutated::rollback::{RequestedBootPlugin, ResolvedBootEntry, RollbackError, TargetPrefixDigest};
+use crate::orchestrator::context::{Context, ctx_get};
 use crate::orchestrator::stage::{NoRollback, RollbackGuard, Stage, StageResult};
-use crate::orchestrator::{Context, ctx_get};
 use crate::plugin::boot::resolve_boot_plugin;
 
 pub struct CheckoutStage;

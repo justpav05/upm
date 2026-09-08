@@ -5,18 +5,24 @@
 
 use std::os::raw::c_void;
 
+use upac_abi::HookMessageFn;
 use upac_abi::error::ErrorKind;
-use upac_abi::hook::{CancelToken, HookMessageFn, Message, MessageHook};
+use upac_abi::hook::CancelToken;
 use upac_abi::request::CDiffPackagesRequest;
 
-pub use self::error::DiffPackagesError;
+use upac_types::RequestedPrefixDigestRange;
+use upac_types::entry::DiffPackageEntry;
+use upac_types::hook::Message;
+use upac_types::states::DiffPackagesStateId;
+use upac_types::traits::MessageHook;
 
 use self::comparing::ComparingStage;
 use self::preparing::PreparingStage;
 
-use crate::orchestrator::{Context, Orchestrator, SequentialOrchestrator, run_unmutated};
-use upac_types::states::DiffPackagesStateId;
-use upac_types::{DiffPackageEntry, RequestedPrefixDigestRange};
+use crate::orchestrator::context::Context;
+use crate::orchestrator::{Orchestrator, SequentialOrchestrator, run_unmutated};
+
+pub use self::error::DiffPackagesError;
 
 mod comparing;
 mod error;
@@ -38,7 +44,7 @@ impl<'a> TryFrom<&'a CDiffPackagesRequest> for DiffPackagesData<'a> {
     fn try_from(request: &'a CDiffPackagesRequest) -> Result<Self, ErrorKind> {
         unsafe { request.validate()? };
 
-        let cancel_token = unsafe { request.base.cancel_token.as_ref() }.ok_or(ErrorKind::InvalidEntry)?;
+        let cancel_token = unsafe { &*request.base.cancel_token };
 
         Ok(DiffPackagesData {
             from_prefix_digest: (&request.from_prefix_digest).try_into()?,

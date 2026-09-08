@@ -5,17 +5,23 @@
 
 use std::os::raw::c_void;
 
+use upac_abi::HookMessageFn;
 use upac_abi::error::ErrorKind;
-use upac_abi::hook::{CancelToken, HookMessageFn, Message, MessageHook};
+use upac_abi::hook::CancelToken;
 use upac_abi::request::CListConfigRequest;
 
-pub use self::error::ListConfigError;
+use upac_types::RequestedPrefixDigest;
+use upac_types::entry::ConfigCommitEntry;
+use upac_types::hook::Message;
+use upac_types::states::ListConfigStateId;
+use upac_types::traits::MessageHook;
 
 use self::fetching::FetchingStage;
 
-use crate::orchestrator::{Context, Orchestrator, SequentialOrchestrator, run_unmutated};
-use upac_types::states::ListConfigStateId;
-use upac_types::{ConfigCommitEntry, RequestedPrefixDigest};
+use crate::orchestrator::context::Context;
+use crate::orchestrator::{Orchestrator, SequentialOrchestrator, run_unmutated};
+
+pub use self::error::ListConfigError;
 
 mod error;
 mod fetching;
@@ -35,7 +41,7 @@ impl<'a> TryFrom<&'a CListConfigRequest> for ListConfigData<'a> {
     fn try_from(request: &'a CListConfigRequest) -> Result<Self, ErrorKind> {
         unsafe { request.validate()? };
 
-        let cancel_token = unsafe { request.base.cancel_token.as_ref() }.ok_or(ErrorKind::InvalidEntry)?;
+        let cancel_token = unsafe { &*request.base.cancel_token };
 
         Ok(ListConfigData {
             prefix_digest: (&request.prefix_digest).try_into()?,

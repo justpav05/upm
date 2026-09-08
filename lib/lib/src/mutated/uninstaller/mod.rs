@@ -10,24 +10,17 @@ use composefs::tree::FileSystem;
 
 use uuid::Uuid;
 
+use upac_abi::HookMessageFn;
 use upac_abi::error::ErrorKind;
-use upac_abi::hook::{CancelToken, HookMessageFn, Message, MessageHook};
+use upac_abi::hook::CancelToken;
 use upac_abi::package::CPackageInfo;
 use upac_abi::request::CUninstallRequest;
 
-use crate::composefs::repository::ObjectID;
-use crate::database::MemoryDatabase;
-use crate::deploy::retention::RetentionStage;
-use crate::deploy::{Deploy, DeployMode};
-use crate::orchestrator::{Context, Orchestrator, SequentialOrchestrator, run_mutating};
-use crate::plugin::boot::BootPlugin;
-use crate::scripts::HookStage;
-use crate::scripts::pipeline::{Operation, PipelineTrigger};
-
+use upac_types::hook::Message;
+use upac_types::package::PackageEntry;
 use upac_types::states::UninstallStateId;
-use upac_types::{PackageEntry, Targets, TmpPath};
-
-pub use self::error::UninstallError;
+use upac_types::traits::MessageHook;
+use upac_types::{TmpPath, UninstallPackagesTargets};
 
 use self::checkout::CheckoutStage;
 use self::commit::CommitTransactionStage;
@@ -36,6 +29,18 @@ use self::open::OpenTransactionStage;
 use self::preparation::PreparationStage;
 use self::remove::RemovePackageStage;
 use self::swap::SwapStage;
+
+use crate::composefs::repository::ObjectID;
+use crate::database::MemoryDatabase;
+use crate::deploy::retention::RetentionStage;
+use crate::deploy::{Deploy, DeployMode};
+use crate::orchestrator::context::Context;
+use crate::orchestrator::{Orchestrator, SequentialOrchestrator, run_mutating};
+use crate::plugin::boot::BootPlugin;
+use crate::scripts::HookStage;
+use crate::scripts::pipeline::{Operation, PipelineTrigger};
+
+pub use self::error::UninstallError;
 
 mod checkout;
 mod commit;
@@ -106,7 +111,7 @@ impl<'a> TryFrom<&'a CUninstallRequest> for UninstallData<'a> {
     fn try_from(request: &'a CUninstallRequest) -> Result<Self, ErrorKind> {
         unsafe { request.validate()? };
 
-        let cancel_token = unsafe { request.base.cancel_token.as_ref() }.ok_or(ErrorKind::InvalidEntry)?;
+        let cancel_token = unsafe { &*request.base.cancel_token };
 
         Ok(UninstallData {
             packages: Vec::try_from(&request.packages)?,

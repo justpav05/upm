@@ -6,8 +6,8 @@
 use std::mem::MaybeUninit;
 
 use upac_abi::boot::{
-    CBootPluginRequest, CBootSlotsRequest, ConfirmBootFn, EspLoaderSourceFn, InstallFn, ProbeFn, RegisterBootSlotsFn,
-    SetOneShotFn,
+    CBootPluginRequest, CBootSlotsRequest, CConfirmBootRequest, ConfirmBootFn, EspLoaderSourceFn, InstallFn, ProbeFn,
+    RegisterBootSlotsFn, SetOneShotFn,
 };
 use upac_abi::error::ErrorKind;
 use upac_abi::types::{CBorrowed, CSlice};
@@ -155,8 +155,11 @@ impl BootPlugin {
         Ok(())
     }
 
-    pub fn confirm_boot(&self, entry_name: &str) -> Result<(), BootPluginError> {
-        let request = CBootPluginRequest::new(CSlice::from_borrowed(entry_name.as_bytes()));
+    pub fn confirm_boot(&self, entry_name: &str, esp_mount_point: &str) -> Result<(), BootPluginError> {
+        let request = CConfirmBootRequest::new(
+            CSlice::from_borrowed(entry_name.as_bytes()),
+            CSlice::from_borrowed(esp_mount_point.as_bytes()),
+        );
         let mut error = MaybeUninit::<ErrorKind>::uninit();
 
         let code = unsafe { (self.confirm_boot)(&request, error.as_mut_ptr()) };

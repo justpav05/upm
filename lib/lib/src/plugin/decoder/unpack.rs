@@ -5,7 +5,8 @@
 
 use upac_abi::hook::CancelToken;
 
-use upac_types::{DeclarativeTrigger, PackageTemp};
+use upac_types::decoder::DeclarativeTrigger;
+use upac_types::package::PackageTemp;
 
 use crate::plugin::decoder::error::DecoderError;
 

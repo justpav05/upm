@@ -15,7 +15,7 @@ use composefs::tree::FileSystem;
 
 use nix::fcntl::AT_FDCWD;
 
-use crate::composefs::error::RepoError;
+use super::error::RepoError;
 
 pub type ObjectID = Sha256HashValue;
 

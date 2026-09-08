@@ -6,19 +6,25 @@
 use std::collections::VecDeque;
 use std::os::raw::c_void;
 
+use upac_abi::HookMessageFn;
 use upac_abi::error::ErrorKind;
-use upac_abi::hook::{CancelToken, HookMessageFn, Message, MessageHook};
+use upac_abi::hook::CancelToken;
 use upac_abi::request::CGcRequest;
 
-pub use self::error::GcError;
+use upac_types::hook::Message;
+use upac_types::traits::MessageHook;
+
+use upac_types::states::GcStateId;
 
 use self::cleaning::CleaningStage;
 use self::collect::CollectRootsStage;
 use self::pruning::PruneStage;
 
 use crate::deploy::{Deploy, DeployMode};
-use crate::orchestrator::{Context, Orchestrator, SequentialOrchestrator, run_mutating};
-use upac_types::states::GcStateId;
+use crate::orchestrator::context::Context;
+use crate::orchestrator::{Orchestrator, SequentialOrchestrator, run_mutating};
+
+pub use self::error::GcError;
 
 mod cleaning;
 mod collect;
@@ -42,7 +48,7 @@ impl<'a> TryFrom<&'a CGcRequest> for GcData<'a> {
     fn try_from(request: &'a CGcRequest) -> Result<Self, ErrorKind> {
         unsafe { request.validate()? };
 
-        let cancel_token = unsafe { request.base.cancel_token.as_ref() }.ok_or(ErrorKind::InvalidEntry)?;
+        let cancel_token = unsafe { &*request.base.cancel_token };
 
         Ok(GcData {
             hook_message: request.base.on_hook,

@@ -10,9 +10,12 @@ use composefs::fsverity::FsVerityHashValue;
 use composefs::generic_tree::Stat;
 use composefs::repository::ImportContext;
 
-use upac_abi::hook::{CancelToken, ProgressEventBuilder};
+use upac_abi::hook::CancelToken;
 
 use upac_types::TmpPath;
+use upac_types::hook::ProgressEventBuilder;
+
+use super::{ImportedConfigDefaults, ImportedDatabase, ImportedTree, InstallError, NewConfigDefaults, NewPrefixDigest};
 
 use crate::composefs::error::RepoError;
 use crate::composefs::file::FileHandle;
@@ -20,11 +23,8 @@ use crate::composefs::repository::commit_tree;
 use crate::database::InMemory;
 use crate::deploy::Deploy;
 use crate::layout::database::{DATABASE_PATH, INSTALLER_SCRATCH_FILENAME};
-use crate::mutated::installer::{
-    ImportedConfigDefaults, ImportedDatabase, ImportedTree, InstallError, NewConfigDefaults, NewPrefixDigest,
-};
+use crate::orchestrator::context::{Context, ctx_get, ctx_take};
 use crate::orchestrator::stage::{NoRollback, RollbackGuard, Stage, StageResult};
-use crate::orchestrator::{Context, ctx_get, ctx_take};
 
 pub struct CommitTransactionStage;
 

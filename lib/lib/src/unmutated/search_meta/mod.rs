@@ -5,18 +5,23 @@
 
 use std::os::raw::c_void;
 
+use upac_abi::HookMessageFn;
 use upac_abi::error::ErrorKind;
-use upac_abi::hook::{CancelToken, HookMessageFn, Message, MessageHook};
+use upac_abi::hook::CancelToken;
 use upac_abi::request::CSearchMetaRequest;
 
-pub use self::error::SearchMetaError;
+use upac_types::hook::Message;
+use upac_types::package::PackageMeta;
+use upac_types::states::SearchMetaStateId;
+use upac_types::traits::MessageHook;
 
 use self::searching::SearchingStage;
 
-use crate::orchestrator::{Context, Orchestrator, SequentialOrchestrator, run_unmutated};
+use crate::orchestrator::context::Context;
+use crate::orchestrator::{Orchestrator, SequentialOrchestrator, run_unmutated};
 use crate::search::Search;
-use upac_types::PackageMeta;
-use upac_types::states::SearchMetaStateId;
+
+pub use self::error::SearchMetaError;
 
 mod error;
 mod searching;
@@ -37,7 +42,7 @@ impl<'a> TryFrom<&'a CSearchMetaRequest> for SearchMetaData<'a> {
     fn try_from(request: &'a CSearchMetaRequest) -> Result<Self, ErrorKind> {
         unsafe { request.validate()? };
 
-        let cancel_token = unsafe { request.base.cancel_token.as_ref() }.ok_or(ErrorKind::InvalidEntry)?;
+        let cancel_token = unsafe { &*request.base.cancel_token };
 
         Ok(SearchMetaData {
             search: (&request.search).try_into()?,
