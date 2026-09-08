@@ -30,6 +30,8 @@ fn option_from_c(ident: &Ident, segment: &PathSegment) -> TokenStream2 {
 
     if inner_name == "String" {
         quote! { Option::<&str>::try_from(&value.#ident)?.map(str::to_owned) }
+    } else if inner_name == "HookMessageFn" {
+        quote! { value.#ident }
     } else {
         quote! { compile_error!("CTryToRust: unsupported Option inner type") }
     }
