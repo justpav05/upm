@@ -7,6 +7,7 @@ use std::array::TryFromSliceError;
 use std::fmt::{Display, Formatter, Result};
 
 use der::Error as DerError;
+
 use rcgen::Error as RcgenError;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

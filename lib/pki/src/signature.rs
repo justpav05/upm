@@ -5,12 +5,15 @@
 
 use der::pem::LineEnding;
 use der::{Decode, DecodePem, Encode, EncodePem};
+
 use ed25519_dalek::{Signature, Verifier, VerifyingKey};
+
 use rcgen::SigningKey;
+
 use x509_cert::Certificate;
 
-use crate::error::PkiError;
-use crate::generate::SigningIdentity;
+use super::error::PkiError;
+use super::generate::SigningIdentity;
 
 const SIGNATURE_LEN: usize = 64;
 const LENGTH_PREFIX_LEN: usize = 4;

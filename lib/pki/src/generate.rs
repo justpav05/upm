@@ -5,14 +5,17 @@
 
 use der::pem::LineEnding;
 use der::{Decode, DecodePem, Encode, EncodePem};
+
 use rcgen::{
     BasicConstraints, CertificateParams, DistinguishedName, DnType, IsCa, Issuer, KeyPair, KeyUsagePurpose,
     PKCS_ED25519,
 };
+
 use rustls_pki_types::CertificateDer;
+
 use x509_cert::Certificate;
 
-use crate::error::PkiError;
+use super::error::PkiError;
 
 pub struct SerializedIdentity {
     pub key_der: Vec<u8>,
