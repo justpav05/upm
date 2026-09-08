@@ -9,7 +9,7 @@ use std::mem::size_of;
 use serde::{Deserialize, Deserializer};
 
 use upac_abi::error::ErrorKind;
-use upac_abi::package::{CPackageDependency, CPackageMeta, CVersion};
+use upac_abi::package::{CPackageDependency, CPackageInfo, CPackageMeta, CVersion};
 use upac_abi::types::{COwned, CSlice};
 
 use upac_macro::{CTryToRust, RedbCodec, RustToC};
@@ -152,6 +152,13 @@ pub struct PackageMeta {
 // ── PackageEntry ────────────────────────────────────────────────────────────
 #[derive(Debug, Clone)]
 pub struct PackageEntry {
+    pub name: String,
+    pub arch: String,
+    pub arch_sub: Option<String>,
+}
+
+#[derive(Debug, Clone, CTryToRust, RustToC)]
+pub struct PackageInfo {
     pub name: String,
     pub arch: String,
     pub arch_sub: Option<String>,

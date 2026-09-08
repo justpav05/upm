@@ -7,13 +7,14 @@ use upac_abi::FsKind;
 
 use self::package::{PackageEntry, PackageMeta};
 
-pub mod boot;
 pub mod codec;
 pub mod decoder;
 pub mod entry;
 pub mod error;
 pub mod hook;
 pub mod package;
+pub mod request;
+pub mod response;
 pub mod settings;
 pub mod states;
 pub mod traits;
